@@ -1,0 +1,44 @@
+service: vrc-video-api
+
+frameworkVersion: '2'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  gss_api_url: ${env:GSS_API_URL}
+  pythonRequirements:
+    dockerizePip: true
+    dockerImage: lambci/lambda:build-python3.7
+    useStaticCache: false
+    useDownloadCache: false
+
+provider:
+  name: aws
+  runtime: python3.7
+  lambdaHashingVersion: 20201221
+  region: ap-northeast-1
+  role: ${env:LAMBDA_IAM}
+
+# you can add packaging information here
+package:
+  exclude:
+    - node_modules/**
+    - .gitignore
+    - package-lock.json
+    - requirements.txt
+    - serverless.yml
+    - .env
+
+functions:
+  main:
+    handler: handler.main
+    memorySize: 3008
+    timeout: 30
+    environment:
+      GSS_API_URL: ${self:custom.gss_api_url}
+    events:
+      - http:
+          path: /api/video
+          method: get
+    
