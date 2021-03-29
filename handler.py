@@ -7,9 +7,9 @@ import boto3
 # メタ情報
 gss_api_url = os.environ['GSS_API_URL']
 
-
 # Lambdaエントリポイント
 def main(event, context):
+    print(event)
     # クエリ文字列を読み取り
     key = event['queryStringParameters'].get('key')
 
@@ -22,7 +22,10 @@ def main(event, context):
     # 動画サイトよりHTMLを取得
     body = get_video_page(url)
     return {
-        'headers': { "Content-type": "text/html; charset=utf-8" },
+        'headers': { 
+                "Content-type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*"
+            },
         'statusCode': 200,
         'body': body,
     }

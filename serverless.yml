@@ -19,6 +19,9 @@ provider:
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
+  tracing:
+    apiGateway: true
+    lambda: true
 
 # you can add packaging information here
 package:
@@ -41,4 +44,5 @@ functions:
       - http:
           path: /api/video
           method: get
+          cors: true
     
