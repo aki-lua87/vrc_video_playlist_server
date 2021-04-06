@@ -7,24 +7,27 @@ plugins:
 
 custom:
   gss_api_url: ${env:GSS_API_URL}
+  vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
     dockerizePip: true
-    dockerImage: lambci/lambda:build-python3.7
+    dockerImage: lambci/lambda:build-python3.8
     useStaticCache: false
     useDownloadCache: false
 
 provider:
   name: aws
-  runtime: python3.7
+  runtime: python3.8
+  provider: ${opt:stage}
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
+  timeout: 30
   tracing:
     apiGateway: true
     lambda: true
 
-# you can add packaging information here
 package:
+  individually: true
   exclude:
     - node_modules/**
     - .gitignore
@@ -36,8 +39,11 @@ package:
 functions:
   main:
     handler: handler.main
-    memorySize: 3008
-    timeout: 30
+    package:
+      include:
+        - handler.py
+      exclude:
+        - src/**
     environment:
       GSS_API_URL: ${self:custom.gss_api_url}
     events:
@@ -45,4 +51,65 @@ functions:
           path: /api/video
           method: get
           cors: true
-    
+  post_user_register:
+    handler: src/lambda/post_user_register/handler.main
+    package:
+      include:
+        - src/lambda/post_user_register/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /user/register
+          method: post
+          cors: true
+  post_users_video_register:
+    handler: src/lambda/post_users_video_register/handler.main
+    package:
+      include:
+        - src/lambda/post_users_video_register/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/video/register
+          method: post
+          cors: true
+  get_users_video:
+    handler: src/lambda/get_users_video/handler.main
+    package:
+      include:
+        - src/lambda/get_users_video/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/video
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    vrcVideoTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.vrc_video_table}
+        AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: video_id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: video_id
+          KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
