@@ -1,3 +1,4 @@
+# 動作検証版スプシ用
 import os
 import time
 import urllib.request
