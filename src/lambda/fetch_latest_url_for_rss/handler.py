@@ -18,7 +18,7 @@ user_id = '1e190f4d-a30f-4b5a-80ac-80b524b51be8'
 video_id = '13ec6b95-919b-486d-9e23-62bbf622fba6'
 
 def main(event, context):
-    discprition = ''
+    description = ''
     
     url = "https://www.youtube.com/feeds/videos.xml?channel_id="+channnel
     body = getRssFeed(url)
@@ -27,14 +27,14 @@ def main(event, context):
         if child.tag == '{http://www.w3.org/2005/Atom}entry':
             for childchild in child:
                 if childchild.tag == '{http://www.w3.org/2005/Atom}title':
-                    discprition = child.find('{http://www.w3.org/2005/Atom}title').text
-                    print('discprition:::',discprition)
+                    description = child.find('{http://www.w3.org/2005/Atom}title').text
+                    print('description:::',description)
                 if childchild.tag == '{http://www.w3.org/2005/Atom}link':
                     target_url = childchild.attrib['href']
                     print('target_url:::',target_url)
                     break
             break
-    putURL(target_url,discprition)
+    putURL(target_url,description)
 
 
 def getRssFeed(url):
@@ -43,12 +43,12 @@ def getRssFeed(url):
         body = res.read().decode('utf-8')
     return body
 
-def putURL(video_url,discprition):
+def putURL(video_url,description):
     table.put_item(
         Item={
             'user_id': user_id,
             'video_id': video_id,
             'url':video_url,
-            'discprition':discprition
+            'description':description
         }
     )

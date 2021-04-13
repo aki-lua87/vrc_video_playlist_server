@@ -13,7 +13,7 @@ def main(event, context):
     body = json.loads(event['body'])
     video_id = body.get('video_id')
     video_url = body.get('video_url')
-    video_discprition = body.get('discprition')
+    video_description = body.get('description')
     # 引数チェック
     if user_id == None or video_id == None or video_url == None:
         return {
@@ -56,7 +56,7 @@ def main(event, context):
             )
         }
     # video登録
-    registVideo(user_id,video_id,video_url,video_discprition)
+    registVideo(user_id,video_id,video_url,video_description)
     return {
         'headers': { 
                 "Access-Control-Allow-Origin": "*"
@@ -73,13 +73,13 @@ def main(event, context):
 def createVideoID():
     return str(uuid.uuid4())
 
-def registVideo(user_id,video_id,video_url,video_discprition):
+def registVideo(user_id,video_id,video_url,video_description):
     table.put_item(
         Item={
             'user_id': user_id,
             'video_id': video_id,
             'url':video_url,
-            'discprition':video_discprition
+            'description':video_description
         }
     )
 
