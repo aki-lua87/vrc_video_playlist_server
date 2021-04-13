@@ -1,4 +1,4 @@
-# 動作検証版スプシ用
+# 動作検証版バックエンドスプレッドシート版API
 import os
 import time
 import urllib.request

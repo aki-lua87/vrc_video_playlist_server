@@ -127,17 +127,6 @@ functions:
           path: /users/{user_id}/video/all
           method: get
           cors: true
-  # test_rss:
-  #   handler: src/lambda/fetch_latest_url_for_rss/handler.main
-  #   package:
-  #     include:
-  #       - src/lambda/fetch_latest_url_for_rss/handler.py
-  #     exclude:
-  #       - src/**
-  #   environment:
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-  #   events:
-  #     - schedule: cron(15 10 * * ? *)
 
 resources:
   Resources:
