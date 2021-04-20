@@ -7,6 +7,7 @@ import uuid
 
 dynamodb = boto3.resource('dynamodb')
 table    = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+my_url   = os.environ['MY_URL']
 
 def main(event, context):
     user_id = event['pathParameters'].get('user_id')
@@ -64,7 +65,7 @@ def main(event, context):
         'statusCode': 200,
         'body': json.dumps(
             {
-                'url': f'(未実装)https//:{user_id}/{video_id}'
+                'url': f'{my_url}/users/{user_id}/video?video_id={video_id}'
             }
         )
     }
@@ -86,8 +87,8 @@ def registVideo(user_id,video_id,video_url,video_description):
 def isUserExist(user_id):
     response = table.get_item(
         Key={
-            'user_id': user_id,
-            'video_id': 'user'
+            'user_id': 'user',
+            'video_id': user_id
         }
     )
     isExistRecord = response.get('Item')

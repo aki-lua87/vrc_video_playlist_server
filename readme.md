@@ -53,5 +53,6 @@ https://demv79t9nj.execute-api.ap-northeast-1.amazonaws.com/prod/
 ```
 
 ## 4. 動画ページ取得
+(VRChatの動画プレイヤーのURLに入力する利用を想定)
 
 /users/{user_id}/video?video_id={video_id} にアクセス
