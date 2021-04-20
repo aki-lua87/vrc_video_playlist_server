@@ -1,0 +1,148 @@
+openapi: 3.0.0
+info:
+  title: vrc_video_api
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /user/register:
+    post:
+      summary: ユーザ作成
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    description: uuid
+      operationId: post-user-regist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters: []
+  '/users/{userid}/video/register':
+    parameters:
+      - schema:
+          type: string
+        name: userid
+        in: path
+        required: true
+    post:
+      summary: 動画URL登録
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  video_id:
+                    type: string
+                  url:
+                    type: string
+      operationId: post-users-userid-video-regist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                video_url:
+                  type: string
+  '/users/{userid}/video':
+    parameters:
+      - schema:
+          type: string
+        name: userid
+        in: path
+        required: true
+        description: ユーザ識別子
+    post:
+      summary: 動画更新
+      operationId: put-users-userid-video-videoid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+      parameters:
+        - schema:
+            type: string
+          in: query
+          description: ビデオ識別子
+          name: video_id
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                video_id:
+                  type: string
+                video_url:
+                  type: string
+                description:
+                  type: string
+    delete:
+      summary: 動画削除
+      operationId: delete-users-userid-video-videoid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      parameters:
+        - schema:
+            type: string
+          in: query
+          description: ビデオ識別子
+          name: video_id
+  '/users/{user_id}/video/all':
+    parameters:
+      - schema:
+          type: string
+        name: user_id
+        in: path
+        required: true
+    get:
+      summary: 登録情報参照
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                    description:
+                      type: string
+                    user_id:
+                      type: string
+                    video_id:
+                      type: string
+      operationId: get-users-user_id-video-all
+components:
+  schemas: {}

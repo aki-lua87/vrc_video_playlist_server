@@ -24,7 +24,7 @@ def main(event, context):
     }
 
 def createUserID():
-    return str(uuid.uuid4())
+    return str(uuid.uuid4())[0:7]
 
 def registerUser(user_id):
     table.put_item(
