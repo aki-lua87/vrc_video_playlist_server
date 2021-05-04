@@ -188,7 +188,7 @@ functions:
           path: /users/{user_id}/video/current/change
           method: get
           cors: true
-  # カレントビデオリスト取得
+  # カレントビデオ取得
   get_users_current_video:
     handler: src/lambda/get_users_current_video/handler.main
     package:
@@ -203,6 +203,22 @@ functions:
           path: /users/{user_id}/video/current
           method: get
           cors: true
+  # カレントビデオリスト取得
+  get_users_current_video_list:
+    handler: src/lambda/get_users_current_video_list/handler.main
+    package:
+      include:
+        - src/lambda/get_users_current_video_list/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/video/current/list
+          method: get
+          cors: true
+
 resources:
   Resources:
     vrcVideoTable:

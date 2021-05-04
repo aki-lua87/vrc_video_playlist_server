@@ -33,7 +33,7 @@ def call_create_video_api(user_id):
 
 def get_all_user():
     response = table.query(KeyConditionExpression=Key('user_id').eq('user'))
-    print(response)
+    # print(response)
     record = response.get('Items')
     if record == None:
         return []
