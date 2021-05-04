@@ -11,8 +11,8 @@ my_url   = os.environ['MY_URL']
 
 def main(event, context):
     user_id = event['pathParameters'].get('user_id')
+    video_id = event['pathParameters'].get('video_id')
     body = json.loads(event['body'])
-    video_id = body.get('video_id')
     video_url = body.get('video_url')
     video_description = body.get('description')
     # 引数チェック
@@ -52,7 +52,7 @@ def main(event, context):
             'statusCode': 400,
             'body': json.dumps(
                 {
-                    'error': 'user not exist'
+                    'error': 'video not exist'
                 }
             )
         }
@@ -65,7 +65,7 @@ def main(event, context):
         'statusCode': 200,
         'body': json.dumps(
             {
-                'url': f'{my_url}/users/{user_id}/video?video_id={video_id}'
+                'url': f'{my_url}/users/{user_id}/videos/{video_id}'
             }
         )
     }

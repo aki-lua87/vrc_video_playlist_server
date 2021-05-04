@@ -11,7 +11,11 @@ table    = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 def main(event, context):
     user_id = event['pathParameters'].get('user_id')
     video_id = event['pathParameters'].get('video_id')
-    if user_id == None or video_id == None:
+    body = json.loads(event['body'])
+    channel_id = body.get('channel_id')
+    description = body.get('description')
+    # 引数チェック
+    if user_id == None or video_id == None or channel_id == None:
         return {
             'headers': { 
                     "Access-Control-Allow-Origin": "*"
@@ -23,8 +27,9 @@ def main(event, context):
                 }
             )
         }
-    isLimit = checkRateLimit(user_id, video_id)
-    if not isLimit:
+    # ビデオチェック
+    isExist = isVideoExist(user_id,video_id)
+    if not isExist:
         return {
             'headers': { 
                     "Access-Control-Allow-Origin": "*"
@@ -32,44 +37,38 @@ def main(event, context):
             'statusCode': 400,
             'body': json.dumps(
                 {
-                    'error': 'Rate Limit'
+                    'error': 'user not exist'
                 }
             )
         }
-    print('user_id:::',user_id)
-    print('video_id:::',video_id)
-    url = getVideoURL(user_id, video_id)
-    print('url:::',url)
-    body = getVideoPage(url)
+    # アップデート用レコードを追加
+    registUpdate(user_id,video_id,channel_id,description)
     return {
-        'headers': { 
-                "Content-type": "text/html; charset=utf-8",
+        'headers': {
                 "Access-Control-Allow-Origin": "*"
             },
         'statusCode': 200,
-        'body': body,
+        'body': json.dumps({}),
     }
 
+def registUpdate(user_id,video_id,channel_id,description):
+    table.put_item(
+        Item={
+            'user_id': 'update',
+            'video_id': f'{user_id}_{video_id}',
+            'channel_id':channel_id,
+            'description':description
+        }
+    )
 
-def getVideoURL(user_id, video_id):
+def isVideoExist(user_id,video_id):
     response = table.get_item(
         Key={
             'user_id': user_id,
             'video_id': video_id
         }
     )
-    record = response.get('Item')
-    if record == None:
+    isExistRecord = response.get('Item')
+    if isExistRecord == None:
         return False
-    print(record)
-    return record.get('url')
-
-def checkRateLimit(user_id, video_id):
     return True
-
-# youtubeの内容をそのまま返す
-def getVideoPage(url):
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read().decode('utf-8')
-    return body

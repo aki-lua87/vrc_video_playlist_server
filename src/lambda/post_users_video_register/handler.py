@@ -52,7 +52,7 @@ def main(event, context):
         'body': json.dumps(
             {
                 'video_id': video_id,
-                'url': f'{my_url}/users/{user_id}/video?video_id={video_id}'
+                'url': f'{my_url}/users/{user_id}/videos/{video_id}'
             }
         )
     }
