@@ -17,7 +17,10 @@ def main(event, context):
     # 全ユーザを取得
     users = get_all_user()
     for user in users:
-        call_create_video_api(user.get('video_id'))
+        try:
+            call_create_video_api(user.get('video_id'))
+        except Exception as e:
+            print('ERROR',user,e)
     return 
 
 def call_create_video_api(user_id):

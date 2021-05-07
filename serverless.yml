@@ -8,6 +8,7 @@ plugins:
 custom:
   gss_api_url: ${env:GSS_API_URL}
   my_url: https://vrc.akakitune87.net
+  video_list_url: http://net.akakitune87.public.s3-website-ap-northeast-1.amazonaws.com
   vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
     dockerizePip: true
@@ -49,6 +50,7 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      VIDEO_LIST_URL: ${self:custom.video_list_url}
     events:
       - http:
           path: /user/register

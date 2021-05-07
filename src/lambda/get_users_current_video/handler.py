@@ -38,6 +38,7 @@ def main(event, context):
                 }
             )
         }
+    print(urls[b_int])
     body = getVideoPage(urls[b_int]['url'])
     return {
         'headers': { 

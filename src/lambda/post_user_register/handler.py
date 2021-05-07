@@ -7,10 +7,12 @@ import uuid
 
 dynamodb = boto3.resource('dynamodb')
 table    = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+video_list_url = os.environ['VIDEO_LIST_URL']
 
 def main(event, context):
     user_id = createUserID()
     registerUser(user_id)
+    url = f'{video_list_url}/{user_id}/video.mp4'
     return {
         'headers': { 
                 "Access-Control-Allow-Origin": "*"
@@ -18,7 +20,8 @@ def main(event, context):
         'statusCode': 200,
         'body': json.dumps(
             {
-                'user_id': user_id
+                'user_id': user_id,
+                'video_list_url': url
             }
         )
     }

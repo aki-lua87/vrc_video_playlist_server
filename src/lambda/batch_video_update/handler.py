@@ -22,7 +22,7 @@ def main(event, context):
             video_id = u_v[1]
             putLatestVideo(user_id,video_id,videoInfo['channel_id'])
         except Exception as e:
-            print('ERROR',videoInfo,e)
+            print('[ERROR]',videoInfo,e)
 
 def getUpadteVideoList():
     response = table.query(KeyConditionExpression=Key('user_id').eq('update'))
