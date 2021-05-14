@@ -20,13 +20,13 @@ def main(event, context):
         try:
             call_create_video_api(user.get('video_id'))
         except Exception as e:
-            print('ERROR',user,e)
+            print('[ERROR]',user,e)
     return 
 
 def call_create_video_api(user_id):
     # video_idにユーザIDが格納されている
     # user_id = user.get('video_id')
-    url = f'https://v9kt9fos4k.execute-api.ap-northeast-1.amazonaws.com/dev/user/{user_id}/create/video'
+    url = f'https://v9kt9fos4k.execute-api.ap-northeast-1.amazonaws.com/dev/user/{user_id}/create/video/list'
     print(url)
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req) as res:

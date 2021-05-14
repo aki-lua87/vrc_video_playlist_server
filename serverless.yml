@@ -72,7 +72,7 @@ functions:
           path: /users/{user_id}/video/register
           method: post
           cors: true
-  # Video取得API
+  # Video取得API(仕様書未記載)
   get_users_video:
     handler: src/lambda/get_users_video/handler.main
     package:
@@ -187,10 +187,15 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
       - http:
-          path: /users/{user_id}/video/current/change
+          # 動画を返したい -> バイナリを返したい -> 非LambdaProxy
+          integration: lambda
+          path: /users/{user_id}/video/current/change/{vid}
           method: get
-          cors: true
-  # カレントビデオ取得
+          response:
+            headers:
+              Content-Type: "'binary/octet-stream'"
+            contentHandling: CONVERT_TO_BINARY
+  # カレントビデオ取得(仕様書未記載)
   get_users_current_video:
     handler: src/lambda/get_users_current_video/handler.main
     package:
