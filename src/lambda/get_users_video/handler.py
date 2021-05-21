@@ -36,10 +36,7 @@ def main(event, context):
                 }
             )
         }
-    print('user_id:::',user_id)
-    print('video_id:::',video_id)
     url = getVideoURL(user_id, video_id)
-    print('url:::',url)
     body = getVideoPage(url)
     return {
         'headers': { 

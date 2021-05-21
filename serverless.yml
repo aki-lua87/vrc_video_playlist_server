@@ -24,6 +24,7 @@ provider:
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
   timeout: 30
+  logRetentionInDays: 14
   tracing:
     apiGateway: true
     lambda: true

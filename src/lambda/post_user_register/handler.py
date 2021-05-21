@@ -27,12 +27,12 @@ def main(event, context):
     }
 
 def createUserID():
-    return str(uuid.uuid4())[0:7]
+    return str(uuid.uuid4())[0:8]
 
 def registerUser(user_id):
     table.put_item(
         Item={
-            "user_id": user_id,
-            "video_id": 'user'
+            "user_id": 'user',
+            "video_id": user_id
         }
     )

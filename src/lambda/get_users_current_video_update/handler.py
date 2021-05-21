@@ -14,22 +14,23 @@ def main(event, context):
     user_id = event['path'].get('user_id')
     video_id = event['path'].get('vid')
     # ユーザチェック
-    isExist = isUserExist(user_id)
-    if not isExist:
-        return {
-            'headers': { 
-                    "Access-Control-Allow-Origin": "*"
-                },
-            'statusCode': 400,
-            'body': json.dumps(
-                {
-                    'error': 'user not exist'
-                }
-            )
-        }
+    # isExist = isUserExist(user_id)
+    # if not isExist:
+    #     return {
+    #         'headers': { 
+    #                 "Access-Control-Allow-Origin": "*"
+    #             },
+    #         'statusCode': 400,
+    #         'body': json.dumps(
+    #             {
+    #                 'error': 'user not exist'
+    #             }
+    #         )
+    #     }
     # videoのチェック
     isExist = isVideoExist(user_id, video_id)
     if not isExist:
+        print('video not exist',event)
         return {
             'headers': { 
                     "Access-Control-Allow-Origin": "*"
@@ -45,14 +46,6 @@ def main(event, context):
     change(user_id, video_id)
     body = call_create_video_api(user_id)
     return base64.b64encode(body)
-    # {
-    #     'headers': {
-    #             "Content-type": "text/html; charset=utf-8",
-    #             "Access-Control-Allow-Origin": "*"
-    #         },
-    #     'statusCode': 200,
-    #     'body': body,
-    # }
 
 def change(user_id,video_id):
     table.put_item(
@@ -76,15 +69,17 @@ def isUserExist(user_id):
     return True
 
 def isVideoExist(user_id, video_id):
+    # リストがあるかのチェック
     response = table.get_item(
         Key={
-            'user_id': user_id,
-            'video_id': video_id
+            'user_id': 'list',
+            'video_id': f'{user_id}_{video_id}'
         }
     )
     isExistRecord = response.get('Item')
     if isExistRecord == None:
         return False
+    print('切り替え先動画',isExistRecord)
     return True
 
 def call_create_video_api(user_id):

@@ -47,17 +47,6 @@ paths:
                 properties:
                   video_id:
                     type: string
-                  url:
-                    type: string
-                    description: VRChat/Unityの動画プレイヤーにセットするURL
-        '':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  video_id:
-                    type: string
                     description: 動画ID
                   url:
                     type: string
@@ -142,7 +131,7 @@ paths:
         in: path
         required: true
     get:
-      summary: 登録情報参照
+      summary: 登録情報全取得
       tags: []
       responses:
         '200':
@@ -163,7 +152,7 @@ paths:
                     video_id:
                       type: string
       operationId: get-users-user_id-video-all
-      description: 登録動画情報参照API
+      description: 登録動画全取得API
   '/users/{user_id}/videos/{video_id}/update':
     parameters:
       - schema:
@@ -179,7 +168,7 @@ paths:
         required: true
         description: 動画ID
     post:
-      summary: update
+      summary: 登録動画自動更新登録
       tags: []
       responses:
         '200':
@@ -215,7 +204,7 @@ paths:
         required: true
         description: ユーザID
     get:
-      summary: current_change
+      summary: 動画参照先変更
       tags: []
       responses:
         '200':
@@ -227,12 +216,12 @@ paths:
                 properties: {}
       operationId: get-users-user_id-video-current-change
       description: |-
-        (試験実装)
-        (VRCからコールを想定してGETで実装)
-        カレント動画をvidで指定したものに切り替え
-        カレントの動画の動画リスト作成もこのタイミングで実施
-        (カレントビデオはチャンネルを設定した動画のみ設定可能)
-        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)
+        (試験実装)、
+        (VRCからコールを想定してGETで実装)、
+        カレント動画をvidで指定したものに切り替え、
+        カレントの動画の動画リスト作成もこのタイミングで実施、
+        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
+        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
         (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
       parameters:
         - schema:
@@ -250,7 +239,7 @@ paths:
         required: true
         description: ユーザID
     get:
-      summary: current_list
+      summary: 参照先動画一覧取得
       tags: []
       responses:
         '200':
@@ -271,10 +260,10 @@ paths:
       operationId: get-users-user_id-video-current-list
       parameters: []
       description: |-
-        (試験実装)
-        カレント動画の動画リストを返却
-        (カレントビデオはチャンネルを設定した動画のみ設定可能)
-        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)
+        (試験実装)、
+        カレント動画の動画リストを返却、
+        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
+        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
         (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
 components:
   schemas: {}
