@@ -8,6 +8,7 @@ plugins:
 custom:
   gss_api_url: ${env:GSS_API_URL}
   my_url: https://vrc.akakitune87.net
+  video_list_url: http://net.akakitune87.public.s3-website-ap-northeast-1.amazonaws.com
   vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
     dockerizePip: true
@@ -23,6 +24,7 @@ provider:
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
   timeout: 30
+  logRetentionInDays: 14
   tracing:
     apiGateway: true
     lambda: true
@@ -39,22 +41,7 @@ package:
     - .env
 
 functions:
-  # スプレッドシート用
-  main:
-    handler: handler.main
-    package:
-      include:
-        - handler.py
-      exclude:
-        - src/**
-    environment:
-      GSS_API_URL: ${self:custom.gss_api_url}
-    events:
-      - http:
-          path: /api/video
-          method: get
-          cors: true
-  # ユーザ作成
+  # ユーザ作成API
   post_user_register:
     handler: src/lambda/post_user_register/handler.main
     package:
@@ -64,12 +51,13 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      VIDEO_LIST_URL: ${self:custom.video_list_url}
     events:
       - http:
           path: /user/register
           method: post
           cors: true
-  # video初回登録
+  # video初回登録API
   post_users_video_register:
     handler: src/lambda/post_users_video_register/handler.main
     package:
@@ -85,7 +73,7 @@ functions:
           path: /users/{user_id}/video/register
           method: post
           cors: true
-  # Video取得
+  # Video取得API(仕様書未記載)
   get_users_video:
     handler: src/lambda/get_users_video/handler.main
     package:
@@ -97,10 +85,10 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
       - http:
-          path: /users/{user_id}/video
+          path: /users/{user_id}/videos/{video_id}
           method: get
           cors: true
-  # Video更新
+  # Video更新API
   post_users_video:
     handler: src/lambda/post_users_video/handler.main
     package:
@@ -113,10 +101,10 @@ functions:
       MY_URL: ${self:custom.my_url}
     events:
       - http:
-          path: /users/{user_id}/video
+          path: /users/{user_id}/videos/{video_id}
           method: post
           cors: true
-  # Video削除
+  # Video削除API
   delete_users_video:
     handler: src/lambda/delete_users_video/handler.main
     package:
@@ -128,10 +116,10 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
       - http:
-          path: /users/{user_id}/video
+          path: /users/{user_id}/videos/{video_id}
           method: delete
           cors: true
-  # ユーザのビデオ一覧を取得
+  # ユーザのビデオ一覧を取得API
   get_users_allvideo:
     handler: src/lambda/get_users_allvideo/handler.main
     package:
@@ -144,6 +132,98 @@ functions:
     events:
       - http:
           path: /users/{user_id}/video/all
+          method: get
+          cors: true
+  # ビデオリスト作成batch (外部APIコールbatch)
+  batch_create_video_list:
+    handler: src/lambda/batch_create_video_list/handler.main
+    timeout: 600
+    package:
+      include:
+        - src/lambda/batch_create_video_list/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - schedule: cron(35 * * * ? *)
+  # ビデオリスト動画取得API TODO: 
+  # ビデオ自動更新登録API
+  post_video_update_register:
+    handler: src/lambda/post_video_update_register/handler.main
+    package:
+      include:
+        - src/lambda/post_video_update_register/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/videos/{video_id}/update
+          method: post
+          cors: true
+  # ビデオ自動更新batch
+  batch_video_update:
+    handler: src/lambda/batch_video_update/handler.main
+    timeout: 600
+    package:
+      include:
+        - src/lambda/batch_video_update/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - schedule: cron(30 * * * ? *)
+  # カレントビデオリスト切り替え(一身上の都合によりGET)
+  get_users_current_video_update:
+    handler: src/lambda/get_users_current_video_update/handler.main
+    package:
+      include:
+        - src/lambda/get_users_current_video_update/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          # 動画を返したい -> バイナリを返したい -> 非LambdaProxy
+          integration: lambda
+          path: /users/{user_id}/video/current/change/{vid}
+          method: get
+          response:
+            headers:
+              Content-Type: "'binary/octet-stream'"
+            contentHandling: CONVERT_TO_BINARY
+  # カレントビデオ取得(仕様書未記載)
+  get_users_current_video:
+    handler: src/lambda/get_users_current_video/handler.main
+    package:
+      include:
+        - src/lambda/get_users_current_video/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/video/current
+          method: get
+          cors: true
+  # カレントビデオリスト取得
+  get_users_current_video_list:
+    handler: src/lambda/get_users_current_video_list/handler.main
+    package:
+      include:
+        - src/lambda/get_users_current_video_list/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /users/{user_id}/video/current/list
           method: get
           cors: true
 

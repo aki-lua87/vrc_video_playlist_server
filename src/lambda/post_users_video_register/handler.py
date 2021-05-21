@@ -52,14 +52,14 @@ def main(event, context):
         'body': json.dumps(
             {
                 'video_id': video_id,
-                'url': f'{my_url}/users/{user_id}/video?video_id={video_id}'
+                'url': f'{my_url}/users/{user_id}/videos/{video_id}'
             }
         )
     }
 
 
 def createVideoID():
-    return str(uuid.uuid4())[0:7]
+    return str(uuid.uuid4())[0:8]
 
 def registVideo(user_id,video_id,video_url,video_description):
     table.put_item(

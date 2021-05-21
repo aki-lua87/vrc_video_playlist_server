@@ -19,16 +19,21 @@ paths:
                 properties:
                   user_id:
                     type: string
-                    description: uuid
+                    description: 作成されたユーザID
+                  video_list_url:
+                    type: string
+                    description: ユーザごとに作成される動画リスト動画へのリンク
       operationId: post-user-regist
+      description: ユーザ登録API
     parameters: []
-  '/users/{userid}/video/register':
+  '/users/{user_id}/video/register':
     parameters:
       - schema:
           type: string
-        name: userid
+        name: user_id
         in: path
         required: true
+        description: ユーザID
     post:
       summary: 動画URL登録
       tags: []
@@ -42,9 +47,10 @@ paths:
                 properties:
                   video_id:
                     type: string
+                    description: 動画ID
                   url:
                     type: string
-                    description: VRChat/Unityの動画プレイヤーにセットするURL
+                    description: VRCに設定するURL
       operationId: post-users-userid-video-regist
       requestBody:
         content:
@@ -56,14 +62,23 @@ paths:
                   type: string
                 description:
                   type: string
-  '/users/{userid}/video':
+              required:
+                - video_url
+      description: 動画登録API
+  '/users/{useri_d}/videos/{video_id}':
     parameters:
       - schema:
           type: string
-        name: userid
+        name: useri_d
         in: path
         required: true
-        description: ユーザ識別子
+        description: ユーザID
+      - schema:
+          type: string
+        name: video_id
+        in: path
+        required: true
+        description: 動画ID
     post:
       summary: 動画更新
       operationId: put-users-userid-video-videoid
@@ -78,25 +93,23 @@ paths:
                   url:
                     type: string
                     description: VRChat/Unityの動画プレイヤーにセットするURL
-      parameters:
-        - schema:
-            type: string
-          in: query
-          description: ビデオ識別子
-          name: video_id
-          required: true
+      parameters: []
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                video_id:
-                  type: string
                 video_url:
                   type: string
+                  description: 動画URL
                 description:
                   type: string
+                  description: 動画説明
+              required:
+                - video_url
+                - description
+      description: 動画登録内容更新API
     delete:
       summary: 動画削除
       operationId: delete-users-userid-video-videoid
@@ -108,12 +121,8 @@ paths:
               schema:
                 type: object
                 properties: {}
-      parameters:
-        - schema:
-            type: string
-          in: query
-          description: ビデオ識別子
-          name: video_id
+      parameters: []
+      description: 動画削除API(動画ID物理削除)
   '/users/{user_id}/video/all':
     parameters:
       - schema:
@@ -122,7 +131,7 @@ paths:
         in: path
         required: true
     get:
-      summary: 登録情報参照
+      summary: 登録情報全取得
       tags: []
       responses:
         '200':
@@ -143,5 +152,118 @@ paths:
                     video_id:
                       type: string
       operationId: get-users-user_id-video-all
+      description: 登録動画全取得API
+  '/users/{user_id}/videos/{video_id}/update':
+    parameters:
+      - schema:
+          type: string
+        name: user_id
+        in: path
+        required: true
+        description: ユーザID
+      - schema:
+          type: string
+        name: video_id
+        in: path
+        required: true
+        description: 動画ID
+    post:
+      summary: 登録動画自動更新登録
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      operationId: post-users-user_id-videos-video_id-update
+      description: |-
+        登録動画自動更新登録API
+        ※YoutubeのチャンネルIDを登録すると毎時自動でチャンネルの最新動画をセットしてくれる
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel_id:
+                  type: string
+                  description: チャンネルID
+                description:
+                  type: string
+              required:
+                - channel_id
+  '/users/{user_id}/video/current/change':
+    parameters:
+      - schema:
+          type: string
+        name: user_id
+        in: path
+        required: true
+        description: ユーザID
+    get:
+      summary: 動画参照先変更
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      operationId: get-users-user_id-video-current-change
+      description: |-
+        (試験実装)、
+        (VRCからコールを想定してGETで実装)、
+        カレント動画をvidで指定したものに切り替え、
+        カレントの動画の動画リスト作成もこのタイミングで実施、
+        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
+        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
+        (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: vid
+          description: 動画ID
+          required: true
+  '/users/{user_id}/video/current/list':
+    parameters:
+      - schema:
+          type: string
+        name: user_id
+        in: path
+        required: true
+        description: ユーザID
+    get:
+      summary: 参照先動画一覧取得
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      description: URL
+                    description:
+                      type: string
+                      description: 動画説明
+      operationId: get-users-user_id-video-current-list
+      parameters: []
+      description: |-
+        (試験実装)、
+        カレント動画の動画リストを返却、
+        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
+        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
+        (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
 components:
   schemas: {}

@@ -10,7 +10,7 @@ table    = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
 def main(event, context):
     user_id = event['pathParameters'].get('user_id')
-    video_id = event['queryStringParameters'].get('video_id')
+    video_id = event['pathParameters'].get('video_id')
     if user_id == None or video_id == None:
         return {
             'headers': { 
@@ -26,9 +26,9 @@ def main(event, context):
     print('user_id:::',user_id)
     print('video_id:::',video_id)
     deleteVideo(user_id, video_id)
+    deleteVideoUpdate(user_id, video_id)
     return {
-        'headers': { 
-                "Content-type": "text/html; charset=utf-8",
+        'headers': {
                 "Access-Control-Allow-Origin": "*"
             },
         'statusCode': 200,
@@ -44,4 +44,12 @@ def deleteVideo(user_id, video_id):
         }
     )
     print(response)
-    return
+
+def deleteVideoUpdate(user_id, video_id):
+    response = table.delete_item(
+        Key={
+            'user_id': 'update',
+            'video_id': f'{user_id}_{video_id}',
+        }
+    )
+    print(response)
