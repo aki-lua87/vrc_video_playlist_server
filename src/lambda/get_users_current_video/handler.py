@@ -11,6 +11,7 @@ table    = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 def main(event, context):
     user_id = event['pathParameters'].get('user_id')
     queryStringParameters = event.get('queryStringParameters')
+    httpMethod = event.get('httpMethod')
     if user_id == None or queryStringParameters == None:
         return {
             'headers': { 
@@ -39,6 +40,17 @@ def main(event, context):
             )
         }
     print(urls[b_int])
+    if httpMethod == 'HEAD':
+        print('HEAD Return')
+        return {
+            'headers': { 
+                    "Content-type": "text/html; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "location": urls[b_int]['url']
+                },
+            'statusCode': 302,
+            'body': "",
+        }
     body = getVideoPage(urls[b_int]['url'])
     return {
         'headers': { 
