@@ -30,7 +30,7 @@ def call_create_video_api(user_id):
     print(url)
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req) as res:
-        body = res.read().decode('utf-8')
+        body = res.read()
     print(f'user_id {user_id} done')
     return body
 

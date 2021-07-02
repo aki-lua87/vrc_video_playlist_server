@@ -88,6 +88,9 @@ functions:
           path: /users/{user_id}/videos/{video_id}
           method: get
           cors: true
+      - http:
+          path: /users/{user_id}/videos/{video_id}
+          method: head
   # Video更新API
   post_users_video:
     handler: src/lambda/post_users_video/handler.main
@@ -211,6 +214,9 @@ functions:
           path: /users/{user_id}/video/current
           method: get
           cors: true
+      - http:
+          path: /users/{user_id}/video/current
+          method: head
   # カレントビデオリスト取得
   get_users_current_video_list:
     handler: src/lambda/get_users_current_video_list/handler.main

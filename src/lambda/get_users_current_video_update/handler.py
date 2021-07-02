@@ -90,3 +90,4 @@ def call_create_video_api(user_id):
         body = res.read() # .decode('utf-8')
     print(f'user_id {user_id} done')
     return body
+
