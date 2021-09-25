@@ -6,7 +6,8 @@ plugins:
   - serverless-python-requirements
 
 custom:
-  gss_api_url: ${env:GSS_API_URL}
+  s3_bucket: ${env:S3_PUBLIC_BUCKET}
+  # gss_api_url: ${env:GSS_API_URL}
   my_url: https://vrc.akakitune87.net
   video_list_url: http://net.akakitune87.public.s3-website-ap-northeast-1.amazonaws.com
   vrc_video_table: ${self:service}-${opt:stage}-table
@@ -232,6 +233,73 @@ functions:
           path: /users/{user_id}/video/current/list
           method: get
           cors: true
+  # mod 20210910 ビデオ&チャンネル同時登録
+  # 登録
+  post_yt_channel_regist:
+    handler: src/lambda/post_yt_channel_regist/handler.main
+    package:
+      include:
+        - src/lambda/post_yt_channel_regist/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          path: /video/yt/channel/regist
+          method: post
+          cors: true
+  # 動画取得
+  get_yt_channel:
+    handler: src/lambda/get_yt_channel/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_channel/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - http:
+          # ?n=n
+          path: /videos/yt/ch/{channel_id}
+          method: get
+          cors: true
+  # リスト取得
+  get_yt_channel_list:
+    handler: src/lambda/get_yt_channel_list/handler.main
+    timeout: 30
+    package:
+      include:
+        - src/lambda/get_yt_channel_list/handler.py
+      exclude:
+        - src/**
+    environment:
+      S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      # 非LambdaProxy
+      - http:
+          integration: lambda
+          path: /videos/yt/chlist/{channel_id}
+          method: get
+          response:
+            headers:
+              Content-Type: "'binary/octet-stream'"
+            contentHandling: CONVERT_TO_BINARY
+  # yt channel自動更新batch
+  batch_yt_channel_video_update:
+    handler: src/lambda/batch_yt_channel_video_update/handler.main
+    timeout: 600
+    package:
+      include:
+        - src/lambda/batch_yt_channel_video_update/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - schedule: cron(30 * * * ? *)
 
 resources:
   Resources:
