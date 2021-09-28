@@ -1,10 +1,7 @@
 import os
-import time
 import urllib.request
 import json
 import boto3
-import uuid
-from boto3.dynamodb.conditions import Key
 import xml.etree.ElementTree as ET
 
 dynamodb = boto3.resource('dynamodb')
@@ -13,10 +10,10 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
 def main(event, context):
     body = json.loads(event['body'])
-    print('body:'+body)
     channel_id = body.get('channel_id')
+    print('channel_id:'+channel_id)
     # 引数チェック
-    if channel_id == None:
+    if channel_id is None:
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -99,7 +96,7 @@ def isExistChannelID(channel_id):
         }
     )
     isExistRecord = response.get('Item')
-    if isExistRecord == None:
+    if isExistRecord is None:
         return False, ""
     return True, isExistRecord.get('author')
 
@@ -109,7 +106,7 @@ def registChannel(channel_id, author):
         Item={
             'user_id': 'yt_channnel_id',
             'video_id': channel_id,
-            'author': '',
+            'author': author,
             'index_create': True
         }
     )
