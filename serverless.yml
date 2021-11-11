@@ -1,6 +1,6 @@
 service: vrc-video-api
 
-frameworkVersion: '2'
+frameworkVersion: "2"
 
 plugins:
   - serverless-python-requirements
@@ -151,7 +151,7 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
       - schedule: cron(35 * * * ? *)
-  # ビデオリスト動画取得API TODO: 
+  # ビデオリスト動画取得API TODO:
   # ビデオ自動更新登録API
   post_video_update_register:
     handler: src/lambda/post_video_update_register/handler.main
@@ -265,6 +265,10 @@ functions:
           path: /videos/yt/ch/{channel_id}
           method: get
           cors: true
+      - http:
+          path: /videos/yt/ch/{channel_id}
+          method: head
+          cors: true
   # リスト取得
   get_yt_channel_list:
     handler: src/lambda/get_yt_channel_list/handler.main
@@ -304,19 +308,19 @@ functions:
 resources:
   Resources:
     vrcVideoTable:
-      Type: 'AWS::DynamoDB::Table'
+      Type: "AWS::DynamoDB::Table"
       Properties:
         TableName: ${self:custom.vrc_video_table}
         AttributeDefinitions:
-        - AttributeName: user_id
-          AttributeType: S
-        - AttributeName: video_id
-          AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+          - AttributeName: video_id
+            AttributeType: S
         KeySchema:
-        - AttributeName: user_id
-          KeyType: HASH
-        - AttributeName: video_id
-          KeyType: RANGE
+          - AttributeName: user_id
+            KeyType: HASH
+          - AttributeName: video_id
+            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
