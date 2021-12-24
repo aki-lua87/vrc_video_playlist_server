@@ -12,7 +12,10 @@ s3_bucket = os.environ['S3_PUBLIC_BUCKET']
 
 
 def main(event, context):
+    print('event:', event)
     channel_id = event['path'].get('channel_id')
+    channel_id = channel_id.strip()
+    print('channel_id:', channel_id)
     isExecUpdate, isExist = GetExecVideoListCreate(channel_id)
     if not isExist:
         print('does not exist', event)

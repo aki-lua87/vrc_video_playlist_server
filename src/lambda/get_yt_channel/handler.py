@@ -8,9 +8,13 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
 
 def main(event, context):
+    print('event:', event)
     channel_id = event['pathParameters'].get('channel_id')
+    channel_id = channel_id.strip()
     queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
+    print('channel_id:', channel_id)
+    print('httpMethod:', httpMethod)
     if channel_id is None or queryStringParameters is None:
         return {
             'headers': {
@@ -66,9 +70,9 @@ def main(event, context):
 def getVideoURLList(channel_id):
     # Videoのlistを取得
     v_list = GetVideoList(channel_id)
-    if v_list is None:
-        return None
     res = []
+    if v_list is None:
+        return res
     for i in range(len(v_list['urls'])):
         res.append({'urls': v_list['urls'][i],
                    'titles': v_list['titles'][i]})
