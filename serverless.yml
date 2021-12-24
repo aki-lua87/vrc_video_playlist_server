@@ -40,6 +40,15 @@ package:
     - requirements.txt
     - serverless.yml
     - .env
+    - memo.txt
+
+layers:
+  utilsLayer:
+    path: src/layers
+    name: ${opt:stage}-${self:service}-utilsLayer
+    description: utils
+    compatibleRuntimes:
+      - python3.8
 
 functions:
   # 登録
@@ -52,6 +61,8 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
     events:
       - http:
           path: /video/yt/channel/regist
@@ -67,6 +78,8 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
     events:
       - http:
           # ?n=n
@@ -89,6 +102,8 @@ functions:
     environment:
       S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
     events:
       # 非LambdaProxy
       - http:
@@ -99,6 +114,10 @@ functions:
             headers:
               Content-Type: "'binary/octet-stream'"
             contentHandling: CONVERT_TO_BINARY
+      - http:
+          path: /videos/yt/chlist/{channel_id}
+          method: head
+          cors: true
   # yt channel自動更新batch
   batch_yt_channel_video_update:
     handler: src/lambda/batch_yt_channel_video_update/handler.main
@@ -110,8 +129,8 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    events:
-      - schedule: cron(30 * * * ? *)
+    # events:
+    #   - schedule: cron(30 * * * ? *)
 
 resources:
   Resources:
