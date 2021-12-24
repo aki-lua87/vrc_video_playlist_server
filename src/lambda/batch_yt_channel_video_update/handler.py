@@ -1,5 +1,6 @@
 import os
 import urllib.request
+import time
 import boto3
 from boto3.dynamodb.conditions import Key
 import xml.etree.ElementTree as ET
@@ -9,6 +10,7 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
 
 def main(event, context):
+    start = time.time()
     videosInfo = getUpadteChannelList()
     if videosInfo is None:
         print('[ERROR] not data')
@@ -36,8 +38,12 @@ def main(event, context):
             registVideoList(channel_id, urls, descriptions)
             # 一覧更新フラグを立てる
             updateChannelUpdateSuccess(channel_id, name)
+            # 1s待つ
+            time.sleep(1)
         except Exception as e:
             print('[ERROR]', videoInfo, e)
+    elapsed_time = time.time() - start
+    print('{0}'.format(elapsed_time) + '[sec]')
 
 
 def getUpadteChannelList():
