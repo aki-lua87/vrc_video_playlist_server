@@ -3,9 +3,10 @@ import os
 import urllib.request
 import boto3
 import base64
+import datetime
+
 import ddbutils
 import ytutils
-import datetime
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
@@ -13,22 +14,25 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 s3 = boto3.resource('s3')
 s3_bucket = os.environ['S3_PUBLIC_BUCKET']
 
+cf_domain = os.environ['CF_DOMAIN']
+
 
 def main(event, context):
     print('event:', event)
     httpMethod = event.get('httpMethod')
     print('httpMethod:', httpMethod)
-    if httpMethod == 'HEAD':
-        print('HEAD Return')
-        return {
-            'headers': {
-                "Content-type": "text/html; charset=utf-8",
-                "Access-Control-Allow-Origin": "*",
-            },
-            'statusCode': 200,
-            'body': "",
-        }
-    channel_id = event['path'].get('channel_id')
+    # if httpMethod == 'HEAD':
+    #     print('HEAD Return')
+    #     return {
+    #         'headers': {
+    #             "Content-type": "text/html; charset=utf-8",
+    #             "Access-Control-Allow-Origin": "*",
+    #         },
+    #         'statusCode': 200,
+    #         'body': "",
+    #     }
+    # channel_id = event['path'].get('channel_id')
+    channel_id = event['pathParameters'].get('channel_id')
     channel_id = channel_id.strip()
     print('channel_id:', channel_id)
     isExist = ddbutils.isExistChannelID(channel_id)
@@ -43,24 +47,35 @@ def main(event, context):
 
     now = datetime.datetime.now()
     nowstr = now.strftime('%Y%m%d%H')
+    rurl = f'{cf_domain}/yt/list/{channel_id}.mp4'
+    print(rurl)
     if (latestDateStr != nowstr):
         # 更新
         print('update and create')
         data, _ = ytutils.getRSS(channel_id)
         _, urls, descriptions = ytutils.scrapingRSS(data)
         ddbutils.registVideoList(channel_id, urls, descriptions, False)
-        body = call_create_video_api(channel_id)
+        _ = call_create_video_api(channel_id)
     else:
         if isExecIndexCreate:
             # 非更新(APIコールのみ)
             print('only create')
-            body = call_create_video_api(channel_id)
+            _ = call_create_video_api(channel_id)
             updateChannelUpdateDone(channel_id)
         else:
             print('s3 get')
             # TODO: リダイレクト
-            body = get_s3_video(s3_bucket, channel_id)
-    return base64.b64encode(body)
+            _ = get_s3_video(s3_bucket, channel_id)
+    return {
+        'headers': {
+            "Content-type": "text/html; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "location": rurl
+        },
+        'statusCode': 302,
+        'body': "",
+    }
+    # return base64.b64encode(body)
 
 
 # リスト動画作成APIをコールし動画を取得
