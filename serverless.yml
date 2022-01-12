@@ -145,7 +145,42 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     # events:
     #   - schedule: cron(30 * * * ? *)
-
+  batch_tver_video_update:
+    handler: src/lambda/batch_tver_video_update/handler.main
+    timeout: 600
+    package:
+      include:
+        - src/lambda/batch_tver_video_update/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - schedule: cron(30 23 * * ? *)
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+  get_tver_channel:
+    handler: src/lambda/get_tver_channel/handler.main
+    package:
+      include:
+        - src/lambda/get_tver_channel/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+    events:
+      - http:
+          # ?n=n
+          path: /videos/tver/{attribute}
+          method: get
+          cors: true
+      - http:
+          path: /videos/tver/{attribute}
+          method: head
+          cors: true
 resources:
   Resources:
     vrcVideoTable:
