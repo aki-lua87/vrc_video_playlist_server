@@ -58,3 +58,17 @@ def registVideoList(channel_id, video_urls, descriptions, index_create):
             'latest_update': now.strftime('%Y%m%d%H'),
         }
     )
+
+
+# チャンネルIDに紐づくリストを取得
+def getTVer(attribute):
+    response = table.get_item(
+        Key={
+            'user_id': 'tver',
+            'video_id': f'{attribute}',
+        }
+    )
+    record = response.get('Item')
+    if record is None:
+        return None
+    return record
