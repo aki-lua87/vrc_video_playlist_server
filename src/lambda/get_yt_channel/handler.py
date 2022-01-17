@@ -32,7 +32,7 @@ def main(event, context):
                 }
             )
         }
-    before = queryStringParameters.get('n')
+    before = queryStringParameters.get('n', 0)
     b_int = int(before)
     url = getVideoURL(channel_id, b_int)
     if httpMethod == 'HEAD':

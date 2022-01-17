@@ -1,5 +1,4 @@
 import os
-from re import search
 import urllib.request
 import json
 import boto3
@@ -81,6 +80,7 @@ def getSearchVideoURL(attribute, text):
     titles = v_list['titles']
     for index, title in enumerate(titles):
         if(text in title):
+            print(urls[index], title)
             return urls[index]
     # スカの場合はエラー動画へ
     return ''
