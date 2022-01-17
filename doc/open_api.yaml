@@ -5,9 +5,9 @@ info:
 servers:
   - url: 'https://vrc.akakitune87.net'
 paths:
-  /user/register:
+  /video/yt/channel/regist:
     post:
-      summary: ユーザ作成
+      summary: Youtubeチャンネル登録
       tags: []
       responses:
         '200':
@@ -23,165 +23,22 @@ paths:
                   video_list_url:
                     type: string
                     description: ユーザごとに作成される動画リスト動画へのリンク
-      operationId: post-user-regist
-      description: ユーザ登録API
-    parameters: []
-  '/users/{user_id}/video/register':
-    parameters:
-      - schema:
-          type: string
-        name: user_id
-        in: path
-        required: true
-        description: ユーザID
-    post:
-      summary: 動画URL登録
-      tags: []
-      responses:
-        '200':
-          description: OK
+        '':
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  video_id:
+                  result:
                     type: string
-                    description: 動画ID
-                  url:
+                    description: OK/NG
+                  auther:
                     type: string
-                    description: VRCに設定するURL
-      operationId: post-users-userid-video-regist
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                video_url:
-                  type: string
-                description:
-                  type: string
-              required:
-                - video_url
-      description: 動画登録API
-  '/users/{useri_d}/videos/{video_id}':
-    parameters:
-      - schema:
-          type: string
-        name: useri_d
-        in: path
-        required: true
-        description: ユーザID
-      - schema:
-          type: string
-        name: video_id
-        in: path
-        required: true
-        description: 動画ID
-    post:
-      summary: 動画更新
-      operationId: put-users-userid-video-videoid
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  url:
-                    type: string
-                    description: VRChat/Unityの動画プレイヤーにセットするURL
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                video_url:
-                  type: string
-                  description: 動画URL
-                description:
-                  type: string
-                  description: 動画説明
-              required:
-                - video_url
-                - description
-      description: 動画登録内容更新API
-    delete:
-      summary: 動画削除
-      operationId: delete-users-userid-video-videoid
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties: {}
-      parameters: []
-      description: 動画削除API(動画ID物理削除)
-  '/users/{user_id}/video/all':
-    parameters:
-      - schema:
-          type: string
-        name: user_id
-        in: path
-        required: true
-    get:
-      summary: 登録情報全取得
-      tags: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    url:
-                      type: string
-                    description:
-                      type: string
-                    user_id:
-                      type: string
-                    video_id:
-                      type: string
-      operationId: get-users-user_id-video-all
-      description: 登録動画全取得API
-  '/users/{user_id}/videos/{video_id}/update':
-    parameters:
-      - schema:
-          type: string
-        name: user_id
-        in: path
-        required: true
-        description: ユーザID
-      - schema:
-          type: string
-        name: video_id
-        in: path
-        required: true
-        description: 動画ID
-    post:
-      summary: 登録動画自動更新登録
-      tags: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties: {}
-      operationId: post-users-user_id-videos-video_id-update
+                    description: チャンネル作成ユーザ
+      operationId: yt-regist
       description: |-
-        登録動画自動更新登録API
-        ※YoutubeのチャンネルIDを登録すると毎時自動でチャンネルの最新動画をセットしてくれる
+        Youtubeチャンネル登録
+        本APIで登録したチャンネルが取得APIで取得可能になる
       requestBody:
         content:
           application/json:
@@ -190,80 +47,157 @@ paths:
               properties:
                 channel_id:
                   type: string
-                  description: チャンネルID
-                description:
-                  type: string
+                  description: YoutubeチャンネルID
               required:
                 - channel_id
-  '/users/{user_id}/video/current/change':
+    parameters: []
+  '/videos/yt/ch/{channel_id}':
     parameters:
       - schema:
           type: string
-        name: user_id
+        name: channel_id
         in: path
         required: true
-        description: ユーザID
+        description: 登録済みYoutubeチャンネルID
     get:
-      summary: 動画参照先変更
+      summary: 登録情報全取得
       tags: []
       responses:
         '200':
           description: OK
           content:
-            application/json:
+            text/html:
               schema:
                 type: object
                 properties: {}
-      operationId: get-users-user_id-video-current-change
+              examples:
+                example-1:
+                  value: {}
+      operationId: yt-get
       description: |-
-        (試験実装)、
-        (VRCからコールを想定してGETで実装)、
-        カレント動画をvidで指定したものに切り替え、
-        カレントの動画の動画リスト作成もこのタイミングで実施、
-        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
-        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
-        (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
+        Youtube動画取得API
+        動画サイトのBodyを返却
+        VRChatの動画プレイヤーよりコールされることを前提としている
       parameters:
         - schema:
             type: string
           in: query
-          name: vid
-          description: 動画ID
-          required: true
-  '/users/{user_id}/video/current/list':
+          name: 'n'
+          description: 動画リストのn番目を取得する、省略した場合は0
+    head:
+      summary: ''
+      operationId: yt-get-head
+      responses:
+        '302':
+          description: Found
+      description: |-
+        Youtube動画取得API
+        対象のYoutubeの動画のURLを302リダイレクトする
+        VRChatの動画プレイヤーよりコールされることを前提としている
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: 'n'
+          description: 動画リストのn番目を取得する、省略した場合は0
+  '/videos/yt/chlist/{channel_id}':
     parameters:
       - schema:
           type: string
-        name: user_id
+        name: channel_id
         in: path
         required: true
-        description: ユーザID
+        description: 登録済みYoutubeチャンネルID
     get:
-      summary: 参照先動画一覧取得
+      summary: Your GET endpoint
       tags: []
+      responses: {}
+      operationId: get-videos-yt-chlist-channel_id
+      description: |-
+        Youtube動画リスト取得API
+        取得可能な動画のリストの動画のURLを302リダイレクトする
+    head:
+      summary: ''
+      operationId: head-videos-yt-chlist-channel_id
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    url:
-                      type: string
-                      description: URL
-                    description:
-                      type: string
-                      description: 動画説明
-      operationId: get-users-user_id-video-current-list
-      parameters: []
       description: |-
-        (試験実装)、
-        カレント動画の動画リストを返却、
-        (カレントビデオはチャンネルを設定した動画のみ設定可能)、
-        (カレントビデオは設定した動画IDの設定したチャンネルの過去15本の動画を取得できるAPI)、
-        (カレントビデオAPI(0が最新) /users/{user_id}/video/current?b={0~14} )
+        Youtube動画リスト取得API
+        取得可能な動画のリストの動画のURLを302リダイレクトする
+  '/videos/tver/{attribute}':
+    parameters:
+      - schema:
+          type: string
+        name: attribute
+        in: path
+        required: true
+        description: 属性
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '302':
+          description: Found
+      operationId: get-videos-tver-attribute
+      description: |-
+        TVer動画取得API
+        対象のTVerの動画のURLを302リダイレクトする
+        VRChatの動画プレイヤーよりコールされることを前提としている
+
+        設定可能な属性は下記(2022/1/1現在)
+        ranking
+        drama 
+        variety
+        documentary
+        anime
+        sport
+        other
+        c
+        short
+        area-kanto
+        area-kansai
+        area-chubu
+        area-hokkaido-tohoku
+        area-chugoku-shikoku
+        area-kyusyu-okinawa
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: 'n'
+          description: 動画リストのn番目を取得する、省略した場合は0
+        - schema:
+            type: string
+          in: query
+          name: search
+          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される
+    head:
+      summary: ''
+      operationId: head-videos-tver-attribute
+      responses:
+        '302':
+          description: Found
+      description: |-
+        TVer動画取得API
+        対象のTVerの動画のURLを302リダイレクトする
+        VRChatの動画プレイヤーよりコールされることを前提としている
+
+        設定可能な属性は下記(2022/1/1現在)
+        ranking
+        drama
+        variety
+        documentary
+        anime
+        sport
+        other
+        c
+        short
+        area-kanto
+        area-kansai
+        area-chubu
+        area-hokkaido-tohoku
+        area-chugoku-shikoku
+        area-kyusyu-okinawa
 components:
   schemas: {}
