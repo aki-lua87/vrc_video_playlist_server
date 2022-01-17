@@ -7,7 +7,7 @@ servers:
 paths:
   /video/yt/channel/regist:
     post:
-      summary: Youtubeチャンネル登録
+      summary: Youtubeチャンネル登録API
       tags: []
       responses:
         '200':
@@ -17,12 +17,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  user_id:
+                  result:
                     type: string
-                    description: 作成されたユーザID
-                  video_list_url:
+                    description: ok/ng
+                  auther:
                     type: string
-                    description: ユーザごとに作成される動画リスト動画へのリンク
+                    description: auther
         '':
           content:
             application/json:
@@ -37,8 +37,12 @@ paths:
                     description: チャンネル作成ユーザ
       operationId: yt-regist
       description: |-
-        Youtubeチャンネル登録
-        本APIで登録したチャンネルが取得APIで取得可能になる
+        Youtubeチャンネル登録 <br>
+        本APIで登録したチャンネルが取得APIで取得可能になる <br>
+         <br>
+        登録補助用のUnity拡張 <br>
+        https://aki-lua87.booth.pm/items/3443008 <br>
+        https://aki-lua87.booth.pm/items/3271864
       requestBody:
         content:
           application/json:
@@ -60,7 +64,7 @@ paths:
         required: true
         description: 登録済みYoutubeチャンネルID
     get:
-      summary: 登録情報全取得
+      summary: Youtube動画取得API
       tags: []
       responses:
         '200':
@@ -75,8 +79,8 @@ paths:
                   value: {}
       operationId: yt-get
       description: |-
-        Youtube動画取得API
-        動画サイトのBodyを返却
+        Youtube動画取得API <br>
+        動画サイトのBodyを返却 <br>
         VRChatの動画プレイヤーよりコールされることを前提としている
       parameters:
         - schema:
@@ -85,14 +89,14 @@ paths:
           name: 'n'
           description: 動画リストのn番目を取得する、省略した場合は0
     head:
-      summary: ''
+      summary: Youtube動画取得API
       operationId: yt-get-head
       responses:
         '302':
           description: Found
       description: |-
-        Youtube動画取得API
-        対象のYoutubeの動画のURLを302リダイレクトする
+        Youtube動画取得API <br>
+        対象のYoutubeの動画のURLを302リダイレクトする <br>
         VRChatの動画プレイヤーよりコールされることを前提としている
       parameters:
         - schema:
@@ -109,21 +113,21 @@ paths:
         required: true
         description: 登録済みYoutubeチャンネルID
     get:
-      summary: Your GET endpoint
+      summary: Youtube動画リスト取得API
       tags: []
       responses: {}
       operationId: get-videos-yt-chlist-channel_id
       description: |-
-        Youtube動画リスト取得API
+        Youtube動画リスト取得API <br>
         取得可能な動画のリストの動画のURLを302リダイレクトする
     head:
-      summary: ''
+      summary: Youtube動画リスト取得API
       operationId: head-videos-yt-chlist-channel_id
       responses:
         '200':
           description: OK
       description: |-
-        Youtube動画リスト取得API
+        Youtube動画リスト取得API <br>
         取得可能な動画のリストの動画のURLを302リダイレクトする
   '/videos/tver/{attribute}':
     parameters:
@@ -134,32 +138,32 @@ paths:
         required: true
         description: 属性
     get:
-      summary: Your GET endpoint
+      summary: TVer動画取得API
       tags: []
       responses:
         '302':
           description: Found
       operationId: get-videos-tver-attribute
       description: |-
-        TVer動画取得API
-        対象のTVerの動画のURLを302リダイレクトする
-        VRChatの動画プレイヤーよりコールされることを前提としている
-
-        設定可能な属性は下記(2022/1/1現在)
-        ranking
-        drama 
-        variety
-        documentary
-        anime
-        sport
-        other
-        c
-        short
-        area-kanto
-        area-kansai
-        area-chubu
-        area-hokkaido-tohoku
-        area-chugoku-shikoku
+        TVer動画取得API <br>
+        対象のTVerの動画のURLを302リダイレクトする <br>
+        VRChatの動画プレイヤーよりコールされることを前提としている <br>
+         <br>
+        設定可能な属性は下記(2022/1/1現在) <br>
+        ranking <br>
+        drama  <br>
+        variety <br>
+        documentary <br>
+        anime <br>
+        sport <br>
+        other <br>
+        c <br>
+        short <br>
+        area-kanto <br>
+        area-kansai <br>
+        area-chubu <br>
+        area-hokkaido-tohoku <br>
+        area-chugoku-shikoku <br>
         area-kyusyu-okinawa
       parameters:
         - schema:
@@ -173,31 +177,42 @@ paths:
           name: search
           description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される
     head:
-      summary: ''
+      summary: TVer動画取得API
       operationId: head-videos-tver-attribute
       responses:
         '302':
           description: Found
       description: |-
-        TVer動画取得API
-        対象のTVerの動画のURLを302リダイレクトする
-        VRChatの動画プレイヤーよりコールされることを前提としている
-
-        設定可能な属性は下記(2022/1/1現在)
-        ranking
-        drama
-        variety
-        documentary
-        anime
-        sport
-        other
-        c
-        short
-        area-kanto
-        area-kansai
-        area-chubu
-        area-hokkaido-tohoku
-        area-chugoku-shikoku
+        TVer動画取得API <br>
+        対象のTVerの動画のURLを302リダイレクトする <br>
+        VRChatの動画プレイヤーよりコールされることを前提としている <br>
+         <br>
+        設定可能な属性は下記(2022/1/1現在) <br>
+        ranking <br>
+        drama  <br>
+        variety <br>
+        documentary <br>
+        anime <br>
+        sport <br>
+        other <br>
+        c <br>
+        short <br>
+        area-kanto <br>
+        area-kansai <br>
+        area-chubu <br>
+        area-hokkaido-tohoku <br>
+        area-chugoku-shikoku <br>
         area-kyusyu-okinawa
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: 'n'
+          description: 動画リストのn番目を取得する、省略した場合は0
+        - schema:
+            type: string
+          in: query
+          name: search
+          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される
 components:
   schemas: {}
