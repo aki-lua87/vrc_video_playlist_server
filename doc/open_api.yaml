@@ -175,7 +175,7 @@ paths:
             type: string
           in: query
           name: search
-          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される
+          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される。 対象の動画が存在しない場合はエラーとなる
     head:
       summary: TVer動画取得API
       operationId: head-videos-tver-attribute
@@ -213,6 +213,6 @@ paths:
             type: string
           in: query
           name: search
-          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される
+          description: 検索キーワード、本パラメータを設定した場合'n'の値は無視される。対象の動画が存在しない場合はエラーとなる
 components:
   schemas: {}
