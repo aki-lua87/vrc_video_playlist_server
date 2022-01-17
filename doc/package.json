@@ -1,0 +1,11 @@
+{
+    "name": "redoc",
+    "version": "1.0.0",
+    "license": "MIT",
+    "scripts": {
+        "build": "redoc-cli bundle open_api.yaml -o public/index.html"
+    },
+    "dependencies": {
+        "redoc-cli": "^0.10.3"
+    }
+}
