@@ -170,6 +170,13 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
     layers:
       - { Ref: UtilsLayerLambdaLayer }
     events:
