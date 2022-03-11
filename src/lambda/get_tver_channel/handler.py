@@ -1,12 +1,12 @@
 import os
 import urllib.request
-import json
 import boto3
 
 import ddbutils
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+cf_domain = os.environ['CF_DOMAIN']
 
 
 def main(event, context):
@@ -20,15 +20,12 @@ def main(event, context):
     if attribute is None or queryStringParameters is None:
         return {
             'headers': {
-                "Access-Control-Allow-Origin": "*"
+                "Content-type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*",
+                "location": f'{cf_domain}/nf.mp4'
             },
-            'statusCode': 400,
-            'body': json.dumps(
-                {
-                    'result': 'NG',
-                    'error': 'bad request [1]'
-                }
-            )
+            'statusCode': 302,
+            'body': "",
         }
     # 文字列指定でもいけるように
     searchWord = queryStringParameters.get('search', '')
@@ -49,15 +46,16 @@ def main(event, context):
             'statusCode': 302,
             'body': "",
         }
-    # TODO: Questはこれでいけるだろうか
-    body = getVideoPage(url)
+    # TODO: Questはこれでいけるだろうか->いけないらしい
+    # body = getVideoPage(url)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "location": url
         },
-        'statusCode': 200,
-        'body': body,
+        'statusCode': 302,
+        'body': "",
     }
 
 
@@ -68,7 +66,7 @@ def getVideoURL(attribute, n):
     titles = v_list['titles']
     if len(urls) < n:
         # 要素超えはエラー動画へ
-        return ''
+        return f'{cf_domain}/nf.mp4'
     print(urls[n], titles[n])
     return urls[n]
 
@@ -83,7 +81,7 @@ def getSearchVideoURL(attribute, text):
             print(urls[index], title)
             return urls[index]
     # スカの場合はエラー動画へ
-    return ''
+    return f'{cf_domain}/nf.mp4'
 
 
 def getVideoPage(url):
