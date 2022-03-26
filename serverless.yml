@@ -147,7 +147,7 @@ functions:
     #   - schedule: cron(30 * * * ? *)
   batch_tver_video_update:
     handler: src/lambda/batch_tver_video_update/handler.main
-    timeout: 600
+    timeout: 300
     package:
       include:
         - src/lambda/batch_tver_video_update/handler.py
@@ -156,8 +156,22 @@ functions:
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
-      - schedule: cron(30 23 * * ? *)
-      - schedule: cron(30 11 * * ? *)
+      - schedule: cron(15 * * * ? *)
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+  batch_tver_lineup_update:
+    handler: src/lambda/batch_tver_lineup_update/handler.main
+    timeout: 800
+    package:
+      include:
+        - src/lambda/batch_tver_lineup_update/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    events:
+      - schedule: cron(0 12 1 * ? *)
     layers:
       - { Ref: UtilsLayerLambdaLayer }
       - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
@@ -187,6 +201,34 @@ functions:
           cors: true
       - http:
           path: /videos/tver/{attribute}
+          method: head
+          cors: true
+  get_tver_search_lineup:
+    handler: src/lambda/get_tver_search_lineup/handler.main
+    package:
+      include:
+        - src/lambda/get_tver_search_lineup/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+    events:
+      - http:
+          path: /videos/tv/lp
+          method: get
+          cors: true
+      - http:
+          path: /videos/tv/lp
           method: head
           cors: true
 resources:

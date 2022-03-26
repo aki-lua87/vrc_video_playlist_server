@@ -1,6 +1,7 @@
 import os
 import boto3
 import datetime
+from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
@@ -69,6 +70,18 @@ def getTVer(attribute):
         }
     )
     record = response.get('Item')
+    if record is None:
+        return None
+    return record
+
+
+# attributeから番組名で取得
+def getTVer2(attribute, title):
+    response = table.query(
+        KeyConditionExpression=Key('user_id').eq(
+            f'tver_{attribute}') & Key('video_id').begins_with(title)
+    )
+    record = response.get('Items')
     if record is None:
         return None
     return record

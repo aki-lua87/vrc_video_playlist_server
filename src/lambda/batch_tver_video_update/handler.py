@@ -55,6 +55,7 @@ def getHTML(url):
 
 
 def registTVer(attribute, urlprefix=''):
+    print('registTVer:' + attribute)
     try:
         html = getHTML(f'https://tver.jp/{urlprefix}{attribute}')
     except urllib.error.URLError as e:
@@ -68,7 +69,7 @@ def registTVer(attribute, urlprefix=''):
         subtitle = lielements.find('p', class_='summary').text
         url = lielements.find('a', class_='detail_link').get('href')
         print('タイトル:'+title + subtitle)
-        print('URL:'+lielements.find('a', class_='detail_link').get('href'))
+        print('URL:'+url)
         urls.append(f'{tverurl}{url}')
         titles.append(f'{title} / {subtitle}')
     updateDB(attribute, urls, titles)
