@@ -29,8 +29,10 @@ def main(event, context):
     # 検索文字列を取得
     searchWord = queryStringParameters.get('search', '')
     lp_url = getSearchVideoURL('lineup', searchWord)
+    print(f'lp_url:{lp_url}')
     lp_html = getLP(lp_url)
     url = getTVerURLforLPhtml(lp_html)
+    print(f'url:{url}')
     if httpMethod == 'HEAD':
         print('HEAD Return')
         return {
@@ -79,11 +81,9 @@ def getTVerURLforLPhtml(html):
     try:
         # 無理やりなのでなんかいつか考えること
         soup = BeautifulSoup(html, "html.parser")
-        for scriptements in soup.find_all("script"):
-            text_list = str(scriptements).split("\"")
-            for text in text_list:
-                if text.startswith("/"):
-                    return f'{tverurl}{text}'
-        return f'{cf_domain}/nf.mp4'
+        # for liements in soup.select('li'):
+        url = soup.find('link').get('href')
+        return f'{url}'
     except BaseException:
+        print('getTVerURLforLPhtml BaseException')
         return f'{cf_domain}/nf.mp4'
