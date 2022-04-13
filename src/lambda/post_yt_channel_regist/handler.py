@@ -11,12 +11,12 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 def main(event, context):
     print('event:', event)
     body = json.loads(event['body'])
-    channel_id = body.get('channel_id')
+    channel_id = body.get('channel_id', '')
     # channel_id の スペースを 除去
     channel_id = channel_id.strip()
     print('channel_id:'+channel_id)
     # 引数チェック
-    if channel_id is None:
+    if channel_id == '':
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -24,7 +24,7 @@ def main(event, context):
             'statusCode': 400,
             'body': json.dumps(
                 {
-                    'error': 'bad request'
+                    'error': 'channel_id is not brank'
                 }
             )
         }

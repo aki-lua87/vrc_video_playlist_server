@@ -65,7 +65,7 @@ def main(event, context):
         else:
             print('s3 get')
             # TODO: リダイレクト
-            _ = get_s3_video(s3_bucket, channel_id)
+            # _ = get_s3_video(s3_bucket, channel_id)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
