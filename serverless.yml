@@ -7,6 +7,7 @@ plugins:
 
 custom:
   s3_bucket: ${env:S3_PUBLIC_BUCKET}
+  yt_api_key: ${env:API_KEY}
   contents_bucket: ${self:service}-${opt:stage}-bucket
   # gss_api_url: ${env:GSS_API_URL}
   my_url: https://vrc.akakitune87.net
@@ -17,8 +18,9 @@ custom:
     dockerImage: lambci/lambda:build-python3.8
     useStaticCache: false
     useDownloadCache: false
-  # deploymentBucket:
-  #   name: "net.akakitune87.deploymentBucket"
+    layer: true
+  deploymentBucket:
+    name: "net.akakitune87.serverlessdeoloy"
 
 provider:
   name: aws
@@ -66,6 +68,7 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     layers:
       - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /video/yt/channel/regist
@@ -81,8 +84,10 @@ functions:
         - src/**
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
     layers:
       - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           # ?n=n
@@ -104,6 +109,7 @@ functions:
         - src/**
     environment:
       S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
+      API_KEY: ${self:custom.yt_api_key}
       CF_DOMAIN:
         Fn::Join:
           - ""
@@ -114,6 +120,7 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     layers:
       - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
     events:
       # 非LambdaProxy
       # - http:
@@ -216,6 +223,35 @@ functions:
           cors: true
       - http:
           path: /videos/tv/lp
+          method: head
+          cors: true
+  get_ytlive_channel:
+    handler: src/lambda/get_ytlive_channel/handler.main
+    package:
+      include:
+        - src/lambda/get_ytlive_channel/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /videos/ytlive/ch/{channel_id}
+          method: get
+          cors: true
+      - http:
+          path: /videos/ytlive/ch/{channel_id}
           method: head
           cors: true
 resources:

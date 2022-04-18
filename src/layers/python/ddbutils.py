@@ -61,6 +61,22 @@ def registVideoList(channel_id, video_urls, descriptions, index_create):
     )
 
 
+# List更新ver.api
+def registVideoListV2(video_datas, index_create):
+    now = datetime.datetime.now()
+    table.put_item(
+        Item={
+            'user_id': 'list_yt_ch',
+            'video_id': video_datas['channelId'],
+            'titles': video_datas['videos']['titles'],
+            'urls': video_datas['videos']['urls'],
+            'live': video_datas['live']['url'],
+            'is_exec_index_create': index_create,
+            'latest_update': now.strftime('%Y%m%d%H'),
+        }
+    )
+
+
 # チャンネルIDに紐づくリストを取得
 def getTVer(attribute):
     response = table.get_item(
