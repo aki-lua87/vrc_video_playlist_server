@@ -254,6 +254,35 @@ functions:
           path: /videos/ytlive/ch/{channel_id}
           method: head
           cors: true
+  get_yt_query:
+    handler: src/lambda/get_yt_query/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_query/handler.py
+      exclude:
+        - src/**
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /videos/yt/query
+          method: get
+          cors: true
+      - http:
+          path: /videos/yt/query
+          method: head
+          cors: true
 resources:
   Resources:
     vrcVideoTable:
@@ -271,8 +300,8 @@ resources:
           - AttributeName: video_id
             KeyType: RANGE
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 3
+          WriteCapacityUnits: 2
     # 動画設置用S3
     ContentsS3:
       Type: AWS::S3::Bucket

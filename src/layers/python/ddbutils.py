@@ -35,6 +35,33 @@ def getVideoList(channel_id):
     return record
 
 
+def getQueryVideoList(q):
+    response = table.get_item(
+        Key={
+            'user_id': 'list_yt_query',
+            'video_id': f'{q}',
+        }
+    )
+    record = response.get('Item')
+    if record is None:
+        return None
+    return record
+
+
+def registQueryVideoList(video_datas, index_create):
+    now = datetime.datetime.now()
+    table.put_item(
+        Item={
+            'user_id': 'list_yt_query',
+            'video_id': video_datas['query'],
+            'titles': video_datas['videos']['titles'],
+            'urls': video_datas['videos']['urls'],
+            'is_exec_index_create': index_create,
+            'latest_update': now.strftime('%Y%m%d%H'),
+        }
+    )
+
+
 # 登録情報更新
 def registChannel(channel_id, author):
     table.put_item(
