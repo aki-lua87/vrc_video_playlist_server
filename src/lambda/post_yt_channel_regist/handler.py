@@ -63,7 +63,7 @@ def main(event, context):
 
     # レコードを追加
     ddbutils.registChannel(channel_id, name)
-    ddbutils.registVideoList(channel_id, urls, descriptions, True)
+    ddbutils.registVideoList(channel_id, urls, descriptions, True, name)
     # https://hoge/videos/yt/{channel_id}
 
     # OK

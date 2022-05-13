@@ -1,5 +1,4 @@
 import os
-import urllib.request
 import json
 import boto3
 import datetime
@@ -9,17 +8,17 @@ import ytutils
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+cf_domain = os.environ['CF_DOMAIN']
 
 
 def main(event, context):
     print('event:', event)
     channel_id = event['pathParameters'].get('channel_id')
     channel_id = channel_id.strip()
-    queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
     print('channel_id:', channel_id)
     print('httpMethod:', httpMethod)
-    if channel_id is None or queryStringParameters is None:
+    if channel_id is None:
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -32,33 +31,21 @@ def main(event, context):
                 }
             )
         }
-    before = queryStringParameters.get('n', 0)
-    b_int = int(before)
-    url = getVideoURL(channel_id, b_int)
-    if httpMethod == 'HEAD':
-        print('HEAD Return')
-        return {
-            'headers': {
-                "Content-type": "text/html; charset=utf-8",
-                "Access-Control-Allow-Origin": "*",
-                "location": url
-            },
-            'statusCode': 302,
-            'body': "",
-        }
-    # TODO: Questはこれでいけるだろうか
-    body = getVideoPage(url)
+    url = getVideoURL(channel_id)
+    if url == '':
+        url = f'{cf_domain}/nf.mp4'
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "location": url
         },
-        'statusCode': 200,
-        'body': body,
+        'statusCode': 302,
+        'body': "",
     }
 
 
-def getVideoURL(channel_id, n):
+def getVideoURL(channel_id):
     # Videoのlistを取得
     v_list = ddbutils.getVideoList(channel_id)
     # 更新有無の確認
@@ -71,17 +58,10 @@ def getVideoURL(channel_id, n):
         print('update')
         data = ytutils.ytapi_search_channelId(channel_id)
         ddbutils.registVideoListV2(data, True)
-        urls = data['videos']['urls']
-        titles = data['videos']['titles']
+        url = data['live']['title']
+        title = data['live']['url']
     else:
-        urls = v_list['urls']
-        titles = v_list['titles']
-    print(urls[n], titles[n])
-    return urls[n]
-
-
-def getVideoPage(url):
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read().decode('utf-8')
-    return body
+        url = v_list['live']
+        title = '未実装'
+    print(url, title)
+    return url

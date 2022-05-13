@@ -1,5 +1,4 @@
 import os
-import urllib.request
 import json
 import boto3
 import datetime
@@ -35,26 +34,14 @@ def main(event, context):
     before = queryStringParameters.get('n', 0)
     b_int = int(before)
     url = getVideoURL(channel_id, b_int)
-    if httpMethod == 'HEAD':
-        print('HEAD Return')
-        return {
-            'headers': {
-                "Content-type": "text/html; charset=utf-8",
-                "Access-Control-Allow-Origin": "*",
-                "location": url
-            },
-            'statusCode': 302,
-            'body': "",
-        }
-    # TODO: Questはこれでいけるだろうか
-    body = getVideoPage(url)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "location": url
         },
-        'statusCode': 200,
-        'body': body,
+        'statusCode': 302,
+        'body': "",
     }
 
 
@@ -78,10 +65,3 @@ def getVideoURL(channel_id, n):
         titles = v_list['titles']
     print(urls[n], titles[n])
     return urls[n]
-
-
-def getVideoPage(url):
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read().decode('utf-8')
-    return body

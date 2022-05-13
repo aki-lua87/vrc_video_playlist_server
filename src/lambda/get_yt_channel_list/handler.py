@@ -52,9 +52,8 @@ def main(event, context):
     if (latestDateStr != nowstr):
         # 更新
         print('update and create')
-        data, _ = ytutils.getRSS(channel_id)
-        _, urls, descriptions = ytutils.scrapingRSS(data)
-        ddbutils.registVideoList(channel_id, urls, descriptions, False)
+        data = ytutils.ytapi_search_channelId(channel_id)
+        ddbutils.registVideoListV2(data, False)
         _ = call_create_video_api(channel_id)
     else:
         if isExecIndexCreate:
