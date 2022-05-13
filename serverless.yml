@@ -1,7 +1,5 @@
 service: vrc-video-api
 
-frameworkVersion: "2"
-
 plugins:
   - serverless-python-requirements
 

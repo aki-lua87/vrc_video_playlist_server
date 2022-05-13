@@ -57,7 +57,7 @@ def ytapi_search_channelId(channelId):
         part='snippet',
         type='video',
         order='date',
-        maxResults=21
+        maxResults=20
     ).execute()
 
     video_datas = {
@@ -109,7 +109,7 @@ def ytapi_search_query(query):
         part='snippet',
         type='video',
         order='date',
-        maxResults=21
+        maxResults=20
     ).execute()
 
     video_datas = {

@@ -74,12 +74,14 @@ def registChannel(channel_id, author):
 
 
 # List更新
-def registVideoList(channel_id, video_urls, descriptions, index_create):
+def registVideoList(channel_id, video_urls, descriptions, index_create, auther=''):
     now = datetime.datetime.now()
     table.put_item(
         Item={
             'user_id': 'list_yt_ch',
             'video_id': f'{channel_id}',
+            'auther': auther,
+            'live': '',
             'titles': descriptions,
             'urls': video_urls,
             'is_exec_index_create': index_create,
@@ -95,6 +97,7 @@ def registVideoListV2(video_datas, index_create):
         Item={
             'user_id': 'list_yt_ch',
             'video_id': video_datas['channelId'],
+            'auther': video_datas['auther'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
             'live': video_datas['live']['url'],
