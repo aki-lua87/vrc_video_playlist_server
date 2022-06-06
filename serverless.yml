@@ -281,6 +281,38 @@ functions:
           path: /videos/yt/query
           method: head
           cors: true
+  # リスト取得
+  get_yt_query_list:
+    handler: src/lambda/get_yt_query_list/handler.main
+    timeout: 30
+    package:
+      include:
+        - src/lambda/get_yt_query_list/handler.py
+      exclude:
+        - src/**
+    environment:
+      S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /videos/yt/query/list
+          method: head
+          cors: true
+      - http:
+          path: /videos/yt/query/list
+          method: get
+          cors: true
 resources:
   Resources:
     vrcVideoTable:
