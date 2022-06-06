@@ -63,8 +63,6 @@ def main(event, context):
             updateChannelUpdateDone(channel_id)
         else:
             print('s3 get')
-            # TODO: リダイレクト
-            # _ = get_s3_video(s3_bucket, channel_id)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
@@ -77,15 +75,14 @@ def main(event, context):
     # return base64.b64encode(body)
 
 
-# リスト動画作成APIをコールし動画を取得
+# リスト動画作成APIをコール
 def call_create_video_api(channel_id):
     url = f'https://v9kt9fos4k.execute-api.ap-northeast-1.amazonaws.com/dev/create/video/{channel_id}'
-    print(url)
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read()
+    with urllib.request.urlopen(req):
+        print(f'call {url}')
     print(f'channel_id {channel_id} done')
-    return body
+    return
 
 
 # S3から動画を取得
