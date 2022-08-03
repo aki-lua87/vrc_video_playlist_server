@@ -129,3 +129,60 @@ def ytapi_search_query(query):
             video_datas['videos']['urls'].append(url)
             video_datas['videos']['authers'].append(auther)
     return video_datas
+
+
+def ytapi_search_channelId_ALL(channelId, n=19):
+    # 再起させても MAX 500 らしい・・・
+    API_KEY = os.environ['API_KEY']
+    YOUTUBE_API_SERVICE_NAME = 'youtube'
+    YOUTUBE_API_VERSION = 'v3'
+
+    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
+
+    youtube = build(
+        YOUTUBE_API_SERVICE_NAME,
+        YOUTUBE_API_VERSION,
+        developerKey=API_KEY
+    )
+
+    nextPagetoken = None
+    video_datas = {
+        'auther': '',
+        'videos': []
+    }
+    count = 0
+    isOverN = False
+    for num in range(20):
+        search_response = youtube.search().list(
+            channelId=channelId,
+            part='snippet',
+            type='video',
+            order='date',
+            maxResults=50,
+            pageToken=nextPagetoken
+        ).execute()
+
+        for search_result in search_response.get("items", []):
+            if search_result["id"]["kind"] == "youtube#video":
+                video_datas['auther'] = search_result["snippet"]["channelTitle"]
+                if search_result["snippet"]["liveBroadcastContent"] == "none":
+                    title = search_result["snippet"]["title"]
+                    url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
+                    video_data = {
+                        'title': title,
+                        'url': url
+                    }
+                    video_datas['videos'].append(video_data)
+                    count = count+1
+                    if count > n:
+                        isOverN = True
+                        break
+        if isOverN:
+            break
+        try:
+            nextPagetoken = search_response["nextPageToken"]
+        except Exception as e:
+            print('[WARN]', e)
+            break
+    print(len(video_datas['videos']))
+    return video_datas

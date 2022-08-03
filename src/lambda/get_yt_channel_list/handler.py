@@ -49,22 +49,23 @@ def main(event, context):
     nowstr = now.strftime('%Y%m%d%H')
     rurl = f'{cf_domain}/yt/list/{channel_id}.mp4'
     print(rurl)
-    if (latestDateStr != nowstr):
-        # 更新
-        print('update and create')
-        data = ytutils.ytapi_search_channelId(channel_id)
-        ddbutils.registVideoListV2(data, False)
-        _ = call_create_video_api(channel_id)
-    else:
-        if isExecIndexCreate:
-            # 非更新(APIコールのみ)
-            print('only create')
+    try:
+        if (latestDateStr != nowstr):
+            # 更新
+            print('update and create')
+            data = ytutils.ytapi_search_channelId(channel_id)
+            ddbutils.registVideoListV2(data, False)
             _ = call_create_video_api(channel_id)
-            updateChannelUpdateDone(channel_id)
         else:
-            print('s3 get')
-            # TODO: リダイレクト
-            # _ = get_s3_video(s3_bucket, channel_id)
+            if isExecIndexCreate:
+                # 非更新(APIコールのみ)
+                print('only create')
+                _ = call_create_video_api(channel_id)
+                updateChannelUpdateDone(channel_id)
+            else:
+                print('s3 get')
+    except Exception as e:
+        print('[WARN] 更新失敗', e)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
@@ -77,15 +78,14 @@ def main(event, context):
     # return base64.b64encode(body)
 
 
-# リスト動画作成APIをコールし動画を取得
+# リスト動画作成APIをコール
 def call_create_video_api(channel_id):
     url = f'https://v9kt9fos4k.execute-api.ap-northeast-1.amazonaws.com/dev/create/video/{channel_id}'
-    print(url)
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read()
+    with urllib.request.urlopen(req):
+        print(f'call {url}')
     print(f'channel_id {channel_id} done')
-    return body
+    return
 
 
 # S3から動画を取得
