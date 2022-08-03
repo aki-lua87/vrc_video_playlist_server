@@ -69,10 +69,15 @@ def getVideoURL(channel_id, n):
     if (latestDateStr != nowstr):
         # 更新
         print('update')
-        data = ytutils.ytapi_search_channelId(channel_id)
-        ddbutils.registVideoListV2(data, True)
-        urls = data['videos']['urls']
-        titles = data['videos']['titles']
+        try:
+            data = ytutils.ytapi_search_channelId(channel_id)
+            ddbutils.registVideoListV2(data, True)
+            urls = data['videos']['urls']
+            titles = data['videos']['titles']
+        except Exception as e:
+            print('[WARN]', e)
+            urls = v_list['urls']
+            titles = v_list['titles']
     else:
         urls = v_list['urls']
         titles = v_list['titles']

@@ -49,20 +49,23 @@ def main(event, context):
     nowstr = now.strftime('%Y%m%d%H')
     rurl = f'{cf_domain}/yt/list/{channel_id}.mp4'
     print(rurl)
-    if (latestDateStr != nowstr):
-        # 更新
-        print('update and create')
-        data = ytutils.ytapi_search_channelId(channel_id)
-        ddbutils.registVideoListV2(data, False)
-        _ = call_create_video_api(channel_id)
-    else:
-        if isExecIndexCreate:
-            # 非更新(APIコールのみ)
-            print('only create')
+    try:
+        if (latestDateStr != nowstr):
+            # 更新
+            print('update and create')
+            data = ytutils.ytapi_search_channelId(channel_id)
+            ddbutils.registVideoListV2(data, False)
             _ = call_create_video_api(channel_id)
-            updateChannelUpdateDone(channel_id)
         else:
-            print('s3 get')
+            if isExecIndexCreate:
+                # 非更新(APIコールのみ)
+                print('only create')
+                _ = call_create_video_api(channel_id)
+                updateChannelUpdateDone(channel_id)
+            else:
+                print('s3 get')
+    except Exception as e:
+        print('[WARN] 更新失敗', e)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
