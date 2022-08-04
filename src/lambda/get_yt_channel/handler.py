@@ -2,7 +2,7 @@ import os
 import urllib.request
 import json
 import boto3
-import datetime
+from datetime import datetime, timedelta
 
 import ddbutils
 import ytutils
@@ -17,8 +17,10 @@ def main(event, context):
     channel_id = channel_id.strip()
     queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
+    ua = event.get('headers').get('User-Agent', '')
     print('channel_id:', channel_id)
     print('httpMethod:', httpMethod)
+    print('User-Agent:', ua)
     if channel_id is None or queryStringParameters is None:
         return {
             'headers': {
@@ -28,33 +30,51 @@ def main(event, context):
             'body': json.dumps(
                 {
                     'result': 'NG',
-                    'error': 'bad request [1]'
+                    'error': 'bad request'
                 }
             )
         }
     before = queryStringParameters.get('n', 0)
     b_int = int(before)
     url = getVideoURL(channel_id, b_int)
-    if httpMethod == 'HEAD':
-        print('HEAD Return')
+    if 'Android' in ua:
+        # Quest処理
+        print('Quest:', ua)
+        quest_url = ddbutils.getQuestURL(url)
+        if quest_url is not None:
+            print('use DynamoDB record')
+            return {
+                'headers': {
+                    "Content-type": "text/html; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "location": quest_url
+                },
+                'statusCode': 302,
+                'body': "",
+            }
+        b = ytutils.exec_ytdlp_cmd(url)
+        quest_url = b.decode()
+        print(quest_url)
+        ttl = get_ttl()
+        ddbutils.registQuestURL(url, quest_url, ttl)
         return {
             'headers': {
                 "Content-type": "text/html; charset=utf-8",
                 "Access-Control-Allow-Origin": "*",
-                "location": url
+                "location": quest_url
             },
             'statusCode': 302,
             'body': "",
         }
-    # TODO: Questはこれでいけるだろうか
-    body = getVideoPage(url)
+    print('PC:', ua)
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "location": url
         },
-        'statusCode': 200,
-        'body': body,
+        'statusCode': 302,
+        'body': "",
     }
 
 
@@ -64,7 +84,7 @@ def getVideoURL(channel_id, n):
     # 更新有無の確認
     latestDateStr = v_list.get('latest_update', 'NoData')
     print('latestDateStr:', latestDateStr)
-    now = datetime.datetime.now()
+    now = datetime.now()
     nowstr = now.strftime('%Y%m%d%H')
     if (latestDateStr != nowstr):
         # 更新
@@ -90,3 +110,9 @@ def getVideoPage(url):
     with urllib.request.urlopen(req) as res:
         body = res.read().decode('utf-8')
     return body
+
+
+def get_ttl():
+    start = datetime.now()
+    expiration_date = start + timedelta(minutes=15)
+    return round(expiration_date.timestamp())

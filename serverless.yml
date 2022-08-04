@@ -75,6 +75,7 @@ functions:
     package:
       include:
         - src/lambda/get_yt_channel/handler.py
+        - yt-dlp
       exclude:
         - src/**
     environment:
@@ -254,6 +255,7 @@ functions:
     package:
       include:
         - src/lambda/get_yt_query/handler.py
+        - yt-dlp
       exclude:
         - src/**
     environment:

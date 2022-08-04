@@ -131,3 +131,28 @@ def getTVer2(attribute, title):
     if record is None:
         return None
     return record
+
+
+def getQuestURL(url):
+    response = table.get_item(
+        Key={
+            'user_id': 'quest_url',
+            'video_id': f'{url}',
+        }
+    )
+    record = response.get('Item')
+    if record is None:
+        return None
+    return record.get('quest_url')
+
+
+# URLをキーにURLを登録(TTL付き)
+def registQuestURL(yt_url, quest_url, ttl):
+    table.put_item(
+        Item={
+            'user_id': 'quest_url',
+            'video_id': yt_url,
+            'quest_url': quest_url,
+            'TTL': ttl
+        }
+    )
