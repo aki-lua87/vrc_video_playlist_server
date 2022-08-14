@@ -1,6 +1,7 @@
 import urllib.request
 import xml.etree.ElementTree as ET
 from apiclient.discovery import build
+import subprocess
 import os
 
 
@@ -186,3 +187,11 @@ def ytapi_search_channelId_ALL(channelId, n=19):
             break
     print(len(video_datas['videos']))
     return video_datas
+
+
+def exec_ytdlp_cmd(url):
+    # yt-dlp -i -q --no-warnings --no-playlist -g https://www.youtube.com/watch?v=xxxxxxxx
+    cp = subprocess.run(
+        ["/var/task/yt-dlp", '-i', '-q', '--no-warnings', '--no-playlist', '-f', 'b', '-g', url], capture_output=True)
+    print("stdout:", cp.stdout)
+    return cp.stdout
