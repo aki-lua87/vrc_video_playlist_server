@@ -1,3 +1,5 @@
 /.serverless
 /node_modules
 memo.txt
+*.pyc
+yt-dlp
