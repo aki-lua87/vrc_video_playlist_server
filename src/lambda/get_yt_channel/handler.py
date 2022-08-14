@@ -37,9 +37,9 @@ def main(event, context):
     before = queryStringParameters.get('n', 0)
     b_int = int(before)
     url = getVideoURL(channel_id, b_int)
-    if 'Android' in ua:
+    if True:  # if 'Android' in ua:
         # Quest処理
-        print('Quest:', ua)
+        print('Quest:(暫定対応として全てこちらに)', ua)
         quest_url = ddbutils.getQuestURL(url)
         if quest_url is not None:
             print('use DynamoDB record')
