@@ -3,3 +3,6 @@
 memo.txt
 *.pyc
 yt-dlp
+headless-chromium
+chromedriver
+example.py

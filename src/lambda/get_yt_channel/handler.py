@@ -10,6 +10,11 @@ import ytutils
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
+PC_UA1 = 'Mozilla/5.0'
+PC_UA2 = 'NSPlayer'
+QUEST_UA = 'stagefright'
+PC_AE = '*'  # 'Accept-Encoding': '*'
+
 
 def main(event, context):
     print('event:', event)
@@ -18,9 +23,11 @@ def main(event, context):
     queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
+    ae = event.get('headers').get('Accept-Encoding', '')
     print('channel_id:', channel_id)
     print('httpMethod:', httpMethod)
     print('User-Agent:', ua)
+    print('Accept-Encoding:', ae)
     if channel_id is None or queryStringParameters is None:
         return {
             'headers': {
@@ -37,36 +44,17 @@ def main(event, context):
     before = queryStringParameters.get('n', 0)
     b_int = int(before)
     url = getVideoURL(channel_id, b_int)
-    if 'Android' in ua:
+    if QUEST_UA in ua:
         # Quest処理
-        print('Quest:', ua)
-        quest_url = ddbutils.getQuestURL(url)
-        if quest_url is not None:
-            print('use DynamoDB record')
-            return {
-                'headers': {
-                    "Content-type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                    "location": quest_url
-                },
-                'statusCode': 302,
-                'body': "",
-            }
-        b = ytutils.exec_ytdlp_cmd(url)
-        quest_url = b.decode()
-        print(quest_url)
-        ttl = get_ttl()
-        ddbutils.registQuestURL(url, quest_url, ttl)
-        return {
-            'headers': {
-                "Content-type": "text/html; charset=utf-8",
-                "Access-Control-Allow-Origin": "*",
-                "location": quest_url
-            },
-            'statusCode': 302,
-            'body': "",
-        }
-    print('PC:', ua)
+        print('Quest')
+        url = resolvURL(url)
+        print(url)
+    elif ae != PC_AE:
+        print('PC 特別対応実施中')
+        url = resolvURL(url)
+        print(url)
+    else:
+        print('Other Enviroments')
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
@@ -76,6 +64,19 @@ def main(event, context):
         'statusCode': 302,
         'body': "",
     }
+
+
+def resolvURL(url):
+    quest_url = ddbutils.getQuestURL(url)
+    if quest_url is not None:
+        print('use DynamoDB record')
+        return quest_url
+    b = ytutils.exec_ytdlp_cmd(url)
+    quest_url = b.decode()
+    print(quest_url)
+    ttl = get_ttl()
+    ddbutils.registQuestURL(url, quest_url, ttl)
+    return quest_url
 
 
 def getVideoURL(channel_id, n):
@@ -101,7 +102,7 @@ def getVideoURL(channel_id, n):
     else:
         urls = v_list['urls']
         titles = v_list['titles']
-    print(urls[n], titles[n])
+    print(titles[n])
     return urls[n]
 
 
