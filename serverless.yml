@@ -43,6 +43,7 @@ package:
     - memo.txt
     - example.py
     - src/**
+    # NOTE: ./addonにyt-dlpが必要
     - addon/**
 layers:
   utilsLayer:
@@ -51,7 +52,8 @@ layers:
     description: utils
     compatibleRuntimes:
       - python3.7
-  # NOTE: 250MB制限、ただLambdaに入れるとOK、意味不明
+  # NOTE: ./src/layers/chromeにchromedriverとheadless-chromiumが必要
+  # NOTE: バージョンは厳密なんだけど何入れて動いたかマジで忘れた
   chromeLayer:
     path: src/layers/chrome
     name: ${opt:stage}-${self:service}-chromeLayer
