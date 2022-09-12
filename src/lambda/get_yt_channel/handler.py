@@ -15,6 +15,9 @@ PC_UA2 = 'NSPlayer'
 QUEST_UA = 'stagefright'
 PC_AE = '*'  # 'Accept-Encoding': '*'
 
+cf_domain = os.environ['CF_DOMAIN']
+URL_404 = f'{cf_domain}/nf.mp4'
+
 
 def main(event, context):
     print('event:', event)
@@ -46,15 +49,17 @@ def main(event, context):
     url = getVideoURL(channel_id, b_int)
     if QUEST_UA in ua:
         # Quest処理
-        print('Quest')
+        print('Quest Request')
         url = resolvURL(url)
         print(url)
-    elif ae != PC_AE:
-        print('PC 特別対応実施中')
+    elif ae == PC_AE:
+        # PC処理
+        print('PC Request::: 特別対応実施中')
         url = resolvURL(url)
         print(url)
     else:
-        print('Other Enviroments')
+        # Other Youtubeにリダイレクト
+        print('Not VRC Request')
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
@@ -102,6 +107,9 @@ def getVideoURL(channel_id, n):
     else:
         urls = v_list['urls']
         titles = v_list['titles']
+    # n バリデーション
+    if len(urls) <= n:
+        return URL_404
     print(titles[n])
     return urls[n]
 

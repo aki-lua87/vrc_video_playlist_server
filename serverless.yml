@@ -16,6 +16,13 @@ custom:
     layer: true
   deploymentBucket:
     name: ${env:DEPLOY_BUCKET}
+  cf_dmain:
+    Fn::Join:
+      - ""
+      - - "https://"
+        - Fn::GetAtt:
+            - ContentsCloudFront
+            - DomainName
 
 provider:
   name: aws
@@ -88,6 +95,7 @@ functions:
     environment:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
       API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN: ${self:custom.cf_dmain}
     layers:
       - { Ref: UtilsLayerLambdaLayer }
       - { Ref: PythonRequirementsLambdaLayer }
@@ -146,19 +154,19 @@ functions:
       - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
       - { Ref: PythonRequirementsLambdaLayer }
       - { Ref: ChromeLayerLambdaLayer }
-  batch_tver_lineup_update:
-    handler: src/lambda/batch_tver_lineup_update/handler.main
-    timeout: 300
-    package:
-      include:
-        - src/lambda/batch_tver_lineup_update/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    # events:
-    #   - schedule: cron(0 12 1 * ? *)
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+  # batch_tver_lineup_update:
+  #   handler: src/lambda/batch_tver_lineup_update/handler.main
+  #   timeout: 300
+  #   package:
+  #     include:
+  #       - src/lambda/batch_tver_lineup_update/handler.py
+  #   environment:
+  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+  #   events:
+  #     - schedule: cron(0 12 1 * ? *)
+  #   layers:
+  #     - { Ref: UtilsLayerLambdaLayer }
+  #     - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
   get_tver_channel:
     handler: src/lambda/get_tver_channel/handler.main
     package:
@@ -185,32 +193,32 @@ functions:
           path: /videos/tver/{attribute}
           method: head
           cors: true
-  get_tver_search_lineup:
-    handler: src/lambda/get_tver_search_lineup/handler.main
-    package:
-      include:
-        - src/lambda/get_tver_search_lineup/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-    events:
-      - http:
-          path: /videos/tv/lp
-          method: get
-          cors: true
-      - http:
-          path: /videos/tv/lp
-          method: head
-          cors: true
+  # get_tver_search_lineup:
+  #   handler: src/lambda/get_tver_search_lineup/handler.main
+  #   package:
+  #     include:
+  #       - src/lambda/get_tver_search_lineup/handler.py
+  #   environment:
+  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+  #     CF_DOMAIN:
+  #       Fn::Join:
+  #         - ""
+  #         - - "https://"
+  #           - Fn::GetAtt:
+  #               - ContentsCloudFront
+  #               - DomainName
+  #   layers:
+  #     - { Ref: UtilsLayerLambdaLayer }
+  #     - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+  #   events:
+  #     - http:
+  #         path: /videos/tv/lp
+  #         method: get
+  #         cors: true
+  #     - http:
+  #         path: /videos/tv/lp
+  #         method: head
+  #         cors: true
   get_ytlive_channel:
     handler: src/lambda/get_ytlive_channel/handler.main
     package:
