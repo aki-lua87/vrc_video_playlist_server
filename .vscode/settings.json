@@ -1,5 +1,5 @@
 {
     "python.analysis.extraPaths": [
-        "./src/layers/python"
+        "./src/layers/utils/python"
     ]
 }
