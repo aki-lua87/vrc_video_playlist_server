@@ -51,12 +51,11 @@ def main(event, context):
         # Quest処理
         print('Quest Request')
         url = resolvURL(url)
-        print(url)
     elif ae == PC_AE:
         # PC処理
-        print('PC Request::: 特別対応実施中')
-        url = resolvURL(url)
-        print(url)
+        # print('PC Request::: 特別対応実施中')
+        print('PC Request')
+        # url = resolvURL(url)
     else:
         # Other Youtubeにリダイレクト
         print('Not VRC Request')

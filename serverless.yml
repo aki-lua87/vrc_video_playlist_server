@@ -409,9 +409,9 @@ resources:
               - HEAD
               - GET
             Compress: false
-            DefaultTTL: 10
-            MaxTTL: 10
-            MinTTL: 10
+            DefaultTTL: 900
+            MaxTTL: 900
+            MinTTL: 900
             ForwardedValues:
               QueryString: false
             SmoothStreaming: false

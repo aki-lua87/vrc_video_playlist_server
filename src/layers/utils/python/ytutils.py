@@ -193,5 +193,5 @@ def exec_ytdlp_cmd(url):
     # yt-dlp -i -q --no-warnings --no-playlist -g https://www.youtube.com/watch?v=xxxxxxxx
     cp = subprocess.run(
         ["/var/task/addon/yt-dlp", '-i', '-q', '--no-warnings', '--no-playlist', '-f', 'b', '-g', url], capture_output=True)
-    print("stdout:", cp.stdout)
+    # print("stdout:", cp.stdout)
     return cp.stdout
