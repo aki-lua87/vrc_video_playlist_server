@@ -149,6 +149,8 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
     events:
       - schedule: cron(30 23 * * ? *)
+      - schedule: cron(30 15 * * ? *)
+      - schedule: cron(30 7 * * ? *)
     layers:
       - { Ref: UtilsLayerLambdaLayer }
       - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13

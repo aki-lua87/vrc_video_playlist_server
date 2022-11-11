@@ -18,6 +18,7 @@ def main(event, context):
     registTVer('variety', 'tags/')
     registTVer('news_documentary', 'tags/')
     registTVer('anime', 'tags/')
+    registTVer('drama', 'tags/')
     # registTVer('variety')
     # registTVer('documentary')
     # registTVer('anime')
