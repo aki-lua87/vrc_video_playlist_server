@@ -156,3 +156,53 @@ def registQuestURL(yt_url, quest_url, ttl):
             'TTL': ttl
         }
     )
+
+
+# 連続再生チャンネルが登録済みか確認、存在する場合はデータを返却
+def isExistContinuousChannelID(channel_id):
+    response = table.get_item(
+        Key={
+            'user_id': 'continuous_yt_channnel_id',
+            'video_id': f'{channel_id}',
+        }
+    )
+    record = response.get('Item')
+    if record is None:
+        return None
+    return record
+
+
+def countupContinuousChannelID(channel_id) -> int:
+    response = table.update_item(
+        Key={
+            'user_id': 'continuous_yt_channnel_id',
+            'video_id': f'{channel_id}',
+        },
+        UpdateExpression="ADD #name :increment",
+        ExpressionAttributeNames={
+            '#name': '_count'
+        },
+        ExpressionAttributeValues={
+            ":increment": 1
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    return response.get('Attributes').get('_count')
+
+
+def registContinuousVideoList(video_datas, ip_address, ttl):
+    now = datetime.datetime.now()
+    table.put_item(
+        Item={
+            'user_id': 'continuous_yt_channnel_id',
+            'video_id': video_datas['channelId'],
+            'auther': video_datas['auther'],
+            'titles': video_datas['videos']['titles'],
+            'urls': video_datas['videos']['urls'],
+            'live': video_datas['live']['url'],
+            '_count': 0,
+            'ip_address': ip_address,
+            'latest_update': now.strftime('%Y%m%d%H'),
+            'TTL': ttl
+        }
+    )
