@@ -10,19 +10,19 @@
 <body>
 
     <article>
-        <h1>VRC動画連続再生システム</h1>
+        <h1>VRC向け動画連続再生システム</h1>
 
         <p>同じURLでYoutubeの特定のチャンネルの動画を連続再生します</p>
-        <p>※ベータ版です、予期しない動作の可能性があります。</p>
-        <p>※複数人での利用の際の動作確認が十分ではありません、フィードバックをお待ちしてます</p>
+        ※動画プレイヤーのリピート再生機能などをご利用ください<br>
+        ※ベータ版です、予期しない動作の可能性があります。<br>
+        ※複数人での利用の際の動作確認が十分ではありません、フィードバックをお待ちしてます<br><br>
 
         <label for="input">チャンネルID入力: </label>
         <!-- <textarea onchange="doCreateURL()" name="input" cols="40" rows="1" id="input"></textarea> -->
         <input type="text" id="input" size="50" placeholder="URL">
         <input type="button" onclick="doCreateURL()" value="URLを作成">
 
-        <p>※チャンネルIDについて 下記サイトを参考に取得ください</p>
-        <p>https://diy-programming.site/youtube-customurl-converter/</p>
+        <p>※チャンネルIDについて <a href="https://diy-programming.site/youtube-customurl-converter/">こちらのサイト</a> を参考に取得ください</p>
 
         <p name="output" id="output"></p>
         <script>
