@@ -21,18 +21,18 @@ URL_404 = f'{cf_domain}/nf.mp4'
 
 def main(event, context):
     print('event:', event)
-    channel_id = event['pathParameters'].get('channel_id')
-    channel_id = channel_id.strip()
+    playlist_id = event['pathParameters'].get('playlist_id')
+    playlist_id = playlist_id.strip()
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
     ae = event.get('headers').get('Accept-Encoding', '')
     ip_address = event.get('headers').get('X-Forwarded-For', 'Anonymous')
     ip_address = ip_address.split(',')[0]
-    print('channel_id:', channel_id)
+    print('playlist_id:', playlist_id)
     print('httpMethod:', httpMethod)
     print('User-Agent:', ua)
     print('Accept-Encoding:', ae)
-    if channel_id is None:
+    if playlist_id is None:
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -52,15 +52,15 @@ def main(event, context):
     print('register_id:', register_id)
 
     # チャンネルが存在するか確認
-    record = ddbutils.isExistContinuousChannelID(channel_id, register_id)
+    record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
 
     # チャンネルが存在しない場合は新規登録し0番を返却
     if record is None:
-        # Youtubeから取得
         try:
-            video_list = ytutils.ytapi_search_channelId(channel_id)
+            # Youtubeから取得
+            video_list = ytutils.ytapi_search_playlist(playlist_id)
         except Exception as e:
-            print(e)
+            print('ytapi_search_playlist Error: ', e)
             return return404()
         print('video_list', video_list)
         if len(video_list) == 0:
@@ -68,7 +68,7 @@ def main(event, context):
         urls = video_list['videos']['urls']
         url = urls[0]
         # DynamoDBに登録
-        ddbutils.regist_continuous_channel_video_list(video_list, ip_address, get_ttl_hours(3), register_id)
+        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(3), register_id)
     else:
         # IPを確認
         isPublishedUser = False
@@ -81,7 +81,7 @@ def main(event, context):
 
         # 登録者はカウントアップ
         if isPublishedUser:
-            count = ddbutils.countupContinuousChannelID(channel_id, register_id)
+            count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
             print(f'count(up): {count}')
             # TTLを更新？
         else:

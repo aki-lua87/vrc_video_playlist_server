@@ -50,6 +50,7 @@ package:
     - memo.txt
     - example.py
     - src/**
+    - html/**
     # NOTE: ./addonにyt-dlpが必要
     - addon/**
 layers:
@@ -340,9 +341,23 @@ functions:
           path: /yt/ch/{channel_id}/continuous
           method: get
           cors: true
+  get_yt_pl_continuous_play:
+    handler: src/lambda/get_yt_pl_continuous_play/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_pl_continuous_play/handler.py
+        - addon/yt-dlp
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN: ${self:custom.cf_dmain}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
       - http:
-          path: /yt/ch/{channel_id}/continuous
-          method: head
+          path: /yt/pl/{playlist_id}/continuous
+          method: get
           cors: true
 resources:
   Resources:
