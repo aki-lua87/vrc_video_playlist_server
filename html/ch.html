@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <title>VRC動画連続再生システム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+    <article>
+        <h1>VRC動画連続再生システム</h1>
+
+        <p>同じURLでYoutubeの特定のチャンネルの動画を連続再生します</p>
+        <p>※ベータ版です、予期しない動作の可能性があります。</p>
+        <p>※複数人での利用の際の動作確認が十分ではありません、フィードバックをお待ちしてます</p>
+
+        <label for="input">チャンネルID入力: </label>
+        <!-- <textarea onchange="doCreateURL()" name="input" cols="40" rows="1" id="input"></textarea> -->
+        <input type="text" id="input" size="50" placeholder="URL">
+        <input type="button" onclick="doCreateURL()" value="URLを作成">
+
+        <p>※チャンネルIDについて 下記サイトを参考に取得ください</p>
+        <p>https://diy-programming.site/youtube-customurl-converter/</p>
+
+        <p name="output" id="output"></p>
+        <script>
+            // NOTE: https://note.affi-sapo-sv.com/js-clipbord-copy.php
+            const clipbordCopy = text => {
+                if (!navigator.clipboard) {
+                    alert("クリップボードにコピーできませんでした"); return false;
+                }
+                navigator.clipboard.writeText(text).then(
+                    () => alert("クリップボードにコピーしました"),
+                    () => alert("クリップボードにコピーできませんでした")
+                );
+                return true;
+            };
+
+            function doCreateURL() {
+                const inputText = document.getElementById("input").value.trim();
+                output = 'https://vrc.akakitune87.net/yt/ch/' + inputText + '/continuous?id=' + generateUuid();
+                clipbordCopy(output);
+                document.getElementById("output").innerHTML = output;
+            }
+
+            // NOTE: https://qiita.com/psn/items/d7ac5bdb5b5633bae165
+            function generateUuid() {
+                // https://github.com/GoogleChrome/chrome-platform-analytics/blob/master/src/internal/identifier.js
+                // const FORMAT: string = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+                let chars = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".split("");
+                for (let i = 0, len = chars.length; i < len; i++) {
+                    switch (chars[i]) {
+                        case "x":
+                            chars[i] = Math.floor(Math.random() * 16).toString(16);
+                            break;
+                        case "y":
+                            chars[i] = (Math.floor(Math.random() * 4) + 8).toString(16);
+                            break;
+                    }
+                }
+                return chars.join("");
+            }
+        </script>
+
+        <br>
+
+        <div>・本サービスは予告なく終了することがあります</div>
+        <div>・本サービスの利用によって生じた損害等については一切の責任を負いかねます</div>
+
+        <br>
+
+        <p>auther: <a href="https://twitter.com/aki_lua87/">aki_lua87</a></p>
+
+    </article>
+
+</body>
+
+</html>
