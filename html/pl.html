@@ -13,7 +13,7 @@
         <h1>VRC向けプレイリスト連続再生システム</h1>
 
         <p>同じURLでYoutubeのプレイリストの内容を連続再生します</p>
-        ※動画プレイヤーのリピート再生機能などをご利用ください<br>
+        ※動画プレイヤーのリロード機能の利用や同じURLの再入力でご利用ください<br>
         ※ベータ版です、予期しない動作の可能性があります。<br>
         ※複数人での利用の際の動作確認が十分ではありません、フィードバックをお待ちしてます<br><br>
 
@@ -21,6 +21,8 @@
         <!-- <textarea onchange="doCreateURL()" name="input" cols="40" rows="1" id="input"></textarea> -->
         <input type="text" id="input" size="50" placeholder="URL">
         <input type="button" onclick="doCreateURL()" value="URLを作成">
+
+        <p>※プレイリストIDについて <a href="./ss1.png">画像</a> を参考に取得ください</p>
 
         <p name="output" id="output"></p>
         <script>
