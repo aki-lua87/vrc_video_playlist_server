@@ -113,6 +113,8 @@ def ytapi_search_query(query):
         maxResults=20
     ).execute()
 
+    print(search_response)
+
     video_datas = {
         'query': query,
         'videos': {
@@ -195,3 +197,43 @@ def exec_ytdlp_cmd(url):
         ["/var/task/addon/yt-dlp", '-i', '-q', '--no-warnings', '--no-playlist', '-f', 'b', '-g', url], capture_output=True)
     # print("stdout:", cp.stdout)
     return cp.stdout
+
+
+def ytapi_search_playlist(pid):
+    API_KEY = os.environ['API_KEY']
+    YOUTUBE_API_SERVICE_NAME = 'youtube'
+    YOUTUBE_API_VERSION = 'v3'
+
+    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
+
+    youtube = build(
+        YOUTUBE_API_SERVICE_NAME,
+        YOUTUBE_API_VERSION,
+        developerKey=API_KEY
+    )
+
+    search_response = youtube.playlistItems().list(
+        part='snippet',
+        playlistId=pid,
+        maxResults=50,
+        fields="items/snippet/title,items/snippet/resourceId/videoId,items/snippet/videoOwnerChannelTitle"
+    ).execute()
+
+    print(search_response)
+
+    video_datas = {
+        'playlistId': pid,
+        'videos': {
+            'titles': [],
+            'urls': [],
+            'authers': []
+        }
+    }
+    for search_result in search_response.get("items", []):
+        title = search_result["snippet"]["title"]
+        url = f'{YOUTUBE_URL}{search_result["snippet"]["resourceId"]["videoId"]}'
+        auther = search_result["snippet"]["videoOwnerChannelTitle"]
+        video_datas['videos']['titles'].append(title)
+        video_datas['videos']['urls'].append(url)
+        video_datas['videos']['authers'].append(auther)
+    return video_datas
