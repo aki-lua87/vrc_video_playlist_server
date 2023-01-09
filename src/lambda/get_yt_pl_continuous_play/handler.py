@@ -21,17 +21,18 @@ URL_404 = f'{cf_domain}/nf.mp4'
 
 def main(event, context):
     print('event:', event)
-    channel_id = event['pathParameters'].get('channel_id')
-    channel_id = channel_id.strip()
-    queryStringParameters = event.get('queryStringParameters')
+    playlist_id = event['pathParameters'].get('playlist_id')
+    playlist_id = playlist_id.strip()
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
     ae = event.get('headers').get('Accept-Encoding', '')
-    print('channel_id:', channel_id)
+    ip_address = event.get('headers').get('X-Forwarded-For', 'Anonymous')
+    ip_address = ip_address.split(',')[0]
+    print('playlist_id:', playlist_id)
     print('httpMethod:', httpMethod)
     print('User-Agent:', ua)
     print('Accept-Encoding:', ae)
-    if channel_id is None or queryStringParameters is None:
+    if playlist_id is None:
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -44,9 +45,53 @@ def main(event, context):
                 }
             )
         }
-    before = queryStringParameters.get('n', 0)
-    b_int = int(before)
-    url = getVideoURL(channel_id, b_int)
+    queryStringParameters = event.get('queryStringParameters')
+    register_id = ''
+    if queryStringParameters is not None:
+        register_id = queryStringParameters.get('id', '')
+    print('register_id:', register_id)
+
+    # チャンネルが存在するか確認
+    record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
+
+    # チャンネルが存在しない場合は新規登録し0番を返却
+    if record is None:
+        try:
+            # Youtubeから取得
+            video_list = ytutils.ytapi_search_playlist(playlist_id)
+        except Exception as e:
+            print('ytapi_search_playlist Error: ', e)
+            return return404()
+        print('video_list', video_list)
+        if len(video_list) == 0:
+            return return404()
+        urls = video_list['videos']['urls']
+        url = urls[0]
+        # DynamoDBに登録
+        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(3), register_id)
+    else:
+        # IPを確認
+        isPublishedUser = False
+        regist_ip_address = record.get('ip_address', None)
+        if ip_address == regist_ip_address:
+            isPublishedUser = True
+        print('受信ip_address:', ip_address)
+        print('登録ip_address:', regist_ip_address)
+        print('isPublishedUser:', isPublishedUser)
+
+        # 登録者はカウントアップ
+        if isPublishedUser:
+            count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
+            print(f'count(up): {count}')
+            # TTLを更新？
+        else:
+            count = record.get('_count')
+            print(f'count(そのまま): {count}')
+        print('count:', int(count))
+
+        # 動画URLを返却
+        urls = record.get('urls')
+        url = urls[int(count)]
     if QUEST_UA in ua:
         # Quest処理
         print('Quest Request')
@@ -78,7 +123,7 @@ def resolvURL(url):
     b = ytutils.exec_ytdlp_cmd(url)
     quest_url = b.decode()
     print(quest_url)
-    ttl = get_ttl()
+    ttl = get_ttl_minute(15)
     ddbutils.registQuestURL(url, quest_url, ttl)
     return quest_url
 
@@ -120,7 +165,25 @@ def getVideoPage(url):
     return body
 
 
-def get_ttl():
+def get_ttl_minute(minute):
     start = datetime.now()
-    expiration_date = start + timedelta(minutes=15)
+    expiration_date = start + timedelta(minutes=minute)
     return round(expiration_date.timestamp())
+
+
+def get_ttl_hours(hour):
+    start = datetime.now()
+    expiration_date = start + timedelta(hours=hour)
+    return round(expiration_date.timestamp())
+
+
+def return404():
+    return {
+        'headers': {
+            "Content-type": "text/html; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "location": URL_404
+        },
+        'statusCode': 302,
+        'body': "",
+    }

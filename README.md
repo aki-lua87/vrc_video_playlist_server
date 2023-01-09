@@ -26,7 +26,7 @@ SUSURU TV. => UCXcjvt8cOfwtcqaMeE7-hqA
 HikakinTV  => UCZf__ehlCEBPop-_sldpBUQ  
 
 
-1. チャンネルの登録  
+#### 1. チャンネルの登録  
   
 下記のAPIをコールします。登録してないチャンネルの動画については取得もできません。  
 一度呼び出せば同じチャンネルについては不要になります  
@@ -40,16 +40,14 @@ BODY:
 ` {channel_id:[チャンネルID]} `  
 
 
-2. 動画リストの取得  
+#### 2. 動画リストの取得  
   
 登録したチャンネルの現在閲覧可能な動画について、VRChat内で参照できるようにするため、動画形式でリストを作成して公開するようにしてます。  
-  
-画像1.動画リスト  
   
 URL: https://vrc.akakitune87.net/videos/yt/chlist/{チャンネルID}  
 METHOD: HEAD or GET  
 
-3. 動画の取得  
+#### 3. 動画の取得  
 
 登録したチャンネルの動画について以下URLで再生できます。
 n=0が最新動画で19に近づくほど古い動画になります。
@@ -61,7 +59,7 @@ METHOD: HEAD or GET
 
 ※Quest対応
 
-4. ライブの取得(β)  
+#### 4. ライブの取得(β)  
   
 もし指定したチャンネルについてライブ配信中である場合下記URLで再生可能です。   
 https://vrc.akakitune87.net/videos/ytlive/ch/{チャンネルID}  
