@@ -216,7 +216,7 @@ def regist_continuous_playlist_video_list(video_datas, ip_address, ttl, id=''):
         Item={
             'user_id': continuous_yt_playlist_id,
             'video_id': video_datas['playlistId'] + '_' + id,
-            'authers': video_datas['videos']['authers'],
+            # 'authers': video_datas['videos']['authers'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
             '_count': 0,
