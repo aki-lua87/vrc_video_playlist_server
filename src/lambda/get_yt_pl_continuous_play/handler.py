@@ -53,10 +53,11 @@ def main(event, context):
 
     # チャンネルが存在するか確認
     record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
-
+    print('受信ip_address:', ip_address)
     # チャンネルが存在しない場合は新規登録し0番を返却
     if record is None:
         try:
+            print('初回登録')
             # Youtubeから取得
             video_list = ytutils.ytapi_search_playlist(playlist_id)
         except Exception as e:
@@ -66,16 +67,17 @@ def main(event, context):
         if len(video_list) == 0:
             return return404()
         urls = video_list['videos']['urls']
+        titles = video_list['videos']['titles']
         url = urls[0]
+        title = titles[0]
         # DynamoDBに登録
-        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(3), register_id)
+        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(12), register_id)
     else:
         # IPを確認
         isPublishedUser = False
         regist_ip_address = record.get('ip_address', None)
         if ip_address == regist_ip_address:
             isPublishedUser = True
-        print('受信ip_address:', ip_address)
         print('登録ip_address:', regist_ip_address)
         print('isPublishedUser:', isPublishedUser)
 
@@ -84,6 +86,7 @@ def main(event, context):
             count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
             print(f'count(up): {count}')
             # TTLを更新？
+            # 配列越えの時に0に戻す処理
         else:
             count = record.get('_count')
             print(f'count(そのまま): {count}')
@@ -91,7 +94,11 @@ def main(event, context):
 
         # 動画URLを返却
         urls = record.get('urls')
+        titles = record.get('titles')
         url = urls[int(count)]
+        title = titles[int(count)]
+    print('返却URL')
+    print(url, title)
     if QUEST_UA in ua:
         # Quest処理
         print('Quest Request')
