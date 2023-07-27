@@ -27,7 +27,7 @@ custom:
 provider:
   name: aws
   runtime: python3.7
-  provider: ${opt:stage}
+  # provider: ${opt:stage}
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
@@ -140,23 +140,23 @@ functions:
           path: /videos/yt/chlist/{channel_id}
           method: get
           cors: true
-  batch_tver_video_update:
-    handler: src/lambda/batch_tver_video_update/handler.main
-    timeout: 300
-    package:
-      include:
-        - src/lambda/batch_tver_video_update/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    events:
-      - schedule: cron(30 2 * * ? *)
-      - schedule: cron(30 18 * * ? *)
-      - schedule: cron(30 10 * * ? *)
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-      - { Ref: PythonRequirementsLambdaLayer }
-      - { Ref: ChromeLayerLambdaLayer }
+  # batch_tver_video_update:
+  #   handler: src/lambda/batch_tver_video_update/handler.main
+  #   timeout: 300
+  #   package:
+  #     include:
+  #       - src/lambda/batch_tver_video_update/handler.py
+  #   environment:
+  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    # events:
+      # - schedule: cron(30 2 * * ? *)
+      # - schedule: cron(30 18 * * ? *)
+      # - schedule: cron(30 10 * * ? *)
+    # layers:
+    #   - { Ref: UtilsLayerLambdaLayer }
+    #   - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+    #   - { Ref: PythonRequirementsLambdaLayer }
+    #   - { Ref: ChromeLayerLambdaLayer }
   # batch_tver_lineup_update:
   #   handler: src/lambda/batch_tver_lineup_update/handler.main
   #   timeout: 300
