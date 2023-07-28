@@ -3,7 +3,7 @@ import os
 import urllib.request
 import boto3
 import base64
-import datetime
+from datetime import datetime
 
 import ddbutils
 import ytutils
@@ -16,25 +16,33 @@ s3_bucket = os.environ['S3_PUBLIC_BUCKET']
 
 cf_domain = os.environ['CF_DOMAIN']
 
+PC_UA1 = 'Mozilla/5.0'
+PC_UA2 = 'NSPlayer'
+QUEST_UA = 'stagefright'
+PC_AE = 'identity'  # 'Accept-Encoding': 'identity'
+LOADER_UA = 'UnityPlayer'  # stringLoaderはこれ？
+
 
 def main(event, context):
     print('event:', event)
     httpMethod = event.get('httpMethod')
+    ua = event.get('headers').get('User-Agent', '')
     print('httpMethod:', httpMethod)
-    # if httpMethod == 'HEAD':
-    #     print('HEAD Return')
-    #     return {
-    #         'headers': {
-    #             "Content-type": "text/html; charset=utf-8",
-    #             "Access-Control-Allow-Origin": "*",
-    #         },
-    #         'statusCode': 200,
-    #         'body': "",
-    #     }
-    # channel_id = event['path'].get('channel_id')
+    print('User-Agent:', ua)
     channel_id = event['pathParameters'].get('channel_id')
     channel_id = channel_id.strip()
     print('channel_id:', channel_id)
+    if LOADER_UA in ua:
+        # StringLoaderからなら文字列を返す
+        titles = getVideoURL(channel_id)
+        return {
+            'headers': {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Access-Control-Allow-Origin": "*"
+            },
+            'statusCode': 200,
+            'body': ','.join(titles),
+        }
     isExist = ddbutils.isExistChannelID(channel_id)
     if not isExist:
         print('does not exist', event)
@@ -44,8 +52,7 @@ def main(event, context):
     latestDateStr = record.get('latest_update', 'NoData')
     print('latestDateStr:', latestDateStr)
     print('isExecIndexCreate:', isExecIndexCreate)
-
-    now = datetime.datetime.now()
+    now = datetime.now()
     nowstr = now.strftime('%Y%m%d%H')
     rurl = f'{cf_domain}/yt/list/{channel_id}.mp4'
     print(rurl)
@@ -75,7 +82,6 @@ def main(event, context):
         'statusCode': 302,
         'body': "",
     }
-    # return base64.b64encode(body)
 
 
 # リスト動画作成APIをコール
@@ -112,3 +118,28 @@ def updateChannelUpdateDone(channel_id):
         },
         ReturnValues="UPDATED_NEW"
     )
+
+
+def getVideoURL(channel_id):
+    # Videoのlistを取得
+    v_list = ddbutils.getVideoList(channel_id)
+    if v_list is None:
+        return None
+    # 更新有無の確認
+    latestDateStr = v_list.get('latest_update', 'NoData')
+    print('latestDateStr:', latestDateStr)
+    now = datetime.now()
+    nowstr = now.strftime('%Y%m%d%H')
+    if (latestDateStr != nowstr):
+        # 更新
+        print('update')
+        try:
+            data = ytutils.ytapi_search_channelId(channel_id)
+            ddbutils.registVideoListV2(data, True)
+            titles = data['videos']['titles']
+        except Exception as e:
+            print('[WARN]', e)
+            titles = v_list['titles']
+    else:
+        titles = v_list['titles']
+    return titles

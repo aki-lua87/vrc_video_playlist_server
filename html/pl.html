@@ -22,6 +22,7 @@
         <!-- <textarea onchange="doCreateURL()" name="input" cols="40" rows="1" id="input"></textarea> -->
         <input type="text" id="input" size="50" placeholder="URL">
         <input type="button" onclick="doCreateURL()" value="URLを作成">
+        <label><input type="checkbox" id="isRandom">ランダム再生</label>
 
         <p>※プレイリストIDについて <a href="./ss1.png">画像</a> を参考に取得ください</p>
 
@@ -41,7 +42,12 @@
 
             function doCreateURL() {
                 const inputText = document.getElementById("input").value.trim();
-                output = 'https://vrc.akakitune87.net/yt/pl/' + inputText + '/continuous?id=' + generateUuid();
+                const isRandom = document.getElementById('isRandom').checked;
+                const uuid = generateUuid();
+                if (isRandom) {
+                    uuid = 'random-' + uuid;
+                }
+                output = 'https://vrc.akakitune87.net/yt/pl/' + inputText + '/continuous?id=' + uuid;
                 clipbordCopy(output);
                 document.getElementById("output").innerHTML = output;
             }

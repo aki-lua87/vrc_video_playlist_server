@@ -58,7 +58,7 @@ def ytapi_search_channelId(channelId):
         part='snippet',
         type='video',
         order='date',
-        maxResults=25
+        maxResults=21
     ).execute()
 
     video_datas = {
@@ -216,7 +216,7 @@ def ytapi_search_playlist(pid):
         part='snippet',
         playlistId=pid,
         maxResults=50,
-        fields="items/snippet/title,items/snippet/resourceId/videoId,items/snippet/videoOwnerChannelTitle"
+        fields="items/snippet/title,items/snippet/resourceId/videoId"
     ).execute()
 
     print(search_response)
@@ -225,15 +225,14 @@ def ytapi_search_playlist(pid):
         'playlistId': pid,
         'videos': {
             'titles': [],
-            'urls': [],
-            'authers': []
+            'urls': []
         }
     }
     for search_result in search_response.get("items", []):
         title = search_result["snippet"]["title"]
         url = f'{YOUTUBE_URL}{search_result["snippet"]["resourceId"]["videoId"]}'
-        auther = search_result["snippet"]["videoOwnerChannelTitle"]
+        # auther = search_result["snippet"]["videoOwnerChannelTitle"]
         video_datas['videos']['titles'].append(title)
         video_datas['videos']['urls'].append(url)
-        video_datas['videos']['authers'].append(auther)
+        # video_datas['videos']['authers'].append(auther)
     return video_datas

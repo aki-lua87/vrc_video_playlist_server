@@ -27,7 +27,7 @@ custom:
 provider:
   name: aws
   runtime: python3.7
-  provider: ${opt:stage}
+  # provider: ${opt:stage}
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
@@ -140,23 +140,23 @@ functions:
           path: /videos/yt/chlist/{channel_id}
           method: get
           cors: true
-  batch_tver_video_update:
-    handler: src/lambda/batch_tver_video_update/handler.main
-    timeout: 300
-    package:
-      include:
-        - src/lambda/batch_tver_video_update/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    events:
+  # batch_tver_video_update:
+  #   handler: src/lambda/batch_tver_video_update/handler.main
+  #   timeout: 300
+  #   package:
+  #     include:
+  #       - src/lambda/batch_tver_video_update/handler.py
+  #   environment:
+  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    # events:
       # - schedule: cron(30 2 * * ? *)
       # - schedule: cron(30 18 * * ? *)
       # - schedule: cron(30 10 * * ? *)
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-      - { Ref: PythonRequirementsLambdaLayer }
-      - { Ref: ChromeLayerLambdaLayer }
+    # layers:
+    #   - { Ref: UtilsLayerLambdaLayer }
+    #   - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
+    #   - { Ref: PythonRequirementsLambdaLayer }
+    #   - { Ref: ChromeLayerLambdaLayer }
   # batch_tver_lineup_update:
   #   handler: src/lambda/batch_tver_lineup_update/handler.main
   #   timeout: 300
@@ -357,6 +357,42 @@ functions:
     events:
       - http:
           path: /yt/pl/{playlist_id}/continuous
+          method: get
+          cors: true
+  # リスト取得 あとで消す
+  get_yt_channel_list_json:
+    handler: src/lambda/get_yt_channel_list_json/handler.main
+    timeout: 30
+    package:
+      include:
+        - src/lambda/get_yt_channel_list_json/handler.py
+    environment:
+      API_KEY: ${self:custom.yt_api_key}
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /videos/yt/chlist/{channel_id}/json
+          method: get
+          cors: true
+  # リスト取得
+  get_yt_chs_description:
+    handler: src/lambda/get_yt_chs_description/handler.main
+    timeout: 30
+    package:
+      include:
+        - src/lambda/get_yt_chs_description/handler.py
+    environment:
+      API_KEY: ${self:custom.yt_api_key}
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /videos/yt/chs/description
           method: get
           cors: true
 resources:

@@ -210,18 +210,19 @@ def regist_continuous_channel_video_list(video_datas, ip_address, ttl, id=''):
 continuous_yt_playlist_id = 'continuous_yt_playlist_id'
 
 
-def regist_continuous_playlist_video_list(video_datas, ip_address, ttl, id=''):
+def regist_continuous_playlist_video_list(video_datas, ip_address, ttl, id='', random_count=0):
     now = datetime.datetime.now()
     table.put_item(
         Item={
             'user_id': continuous_yt_playlist_id,
             'video_id': video_datas['playlistId'] + '_' + id,
-            'authers': video_datas['videos']['authers'],
+            # 'authers': video_datas['videos']['authers'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
             '_count': 0,
             'ip_address': ip_address,
             'latest_update': now.strftime('%Y%m%d%H'),
+            'random_count': random_count,
             'TTL': ttl
         }
     )
@@ -243,6 +244,39 @@ def countup_continuous_playlist_id(playlist_id, id='') -> int:
         ReturnValues="UPDATED_NEW"
     )
     return response.get('Attributes').get('_count')
+
+
+def reset_continuous_playlist_id(playlist_id, id=''):
+    response = table.update_item(
+        Key={
+            'user_id': continuous_yt_playlist_id,
+            'video_id': f'{playlist_id}_{id}',
+        },
+        UpdateExpression="set #name=:new_count",
+        ExpressionAttributeNames={
+            '#name': '_count'
+        },
+        ExpressionAttributeValues={
+            ":new_count": 0
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    return response.get('Attributes').get('_count')
+
+
+def update_randcount_continuous_playlist_id(playlist_id, id='', random_count=0):
+    response = table.update_item(
+        Key={
+            'user_id': continuous_yt_playlist_id,
+            'video_id': f'{playlist_id}_{id}',
+        },
+        UpdateExpression="set random_count=:new_count",
+        ExpressionAttributeValues={
+            ":new_count": random_count
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    return response.get('Attributes').get('random_count')
 
 
 def is_exist_continuous_playlist_id(playlist_id, id=''):

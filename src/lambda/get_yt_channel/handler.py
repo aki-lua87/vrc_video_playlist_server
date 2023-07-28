@@ -13,7 +13,7 @@ table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 PC_UA1 = 'Mozilla/5.0'
 PC_UA2 = 'NSPlayer'
 QUEST_UA = 'stagefright'
-PC_AE = '*'  # 'Accept-Encoding': '*'
+PC_AE = 'identity'  # 'Accept-Encoding': 'identity'
 
 cf_domain = os.environ['CF_DOMAIN']
 URL_404 = f'{cf_domain}/nf.mp4'
@@ -46,7 +46,7 @@ def main(event, context):
         }
     before = queryStringParameters.get('n', 0)
     b_int = int(before)
-    url = getVideoURL(channel_id, b_int)
+    url, title = getVideoURL(channel_id, b_int)
     if QUEST_UA in ua:
         # Quest処理
         print('Quest Request')
@@ -58,7 +58,17 @@ def main(event, context):
         # url = resolvURL(url)
     else:
         # Other Youtubeにリダイレクト
-        print('Not VRC Request')
+        print('Not VRC Request or StringLoader')
+
+        # YTTL JSONを返却
+        return {
+            'headers': {
+                "Content-type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*",
+            },
+            'statusCode': 200,
+            'body': '{"title":"'+title+'"}',
+        }
     return {
         'headers': {
             "Content-type": "text/html; charset=utf-8",
@@ -110,7 +120,7 @@ def getVideoURL(channel_id, n):
     if len(urls) <= n:
         return URL_404
     print(titles[n])
-    return urls[n]
+    return urls[n], titles[n]
 
 
 def getVideoPage(url):
