@@ -252,7 +252,10 @@ def reset_continuous_playlist_id(playlist_id, id=''):
             'user_id': continuous_yt_playlist_id,
             'video_id': f'{playlist_id}_{id}',
         },
-        UpdateExpression="set _count=:new_count",
+        UpdateExpression="set #name=:new_count",
+        ExpressionAttributeNames={
+            '#name': '_count'
+        },
         ExpressionAttributeValues={
             ":new_count": 0
         },

@@ -84,22 +84,6 @@ def main(event, context):
             print('count(random regist):', count)
             ddbutils.update_randcount_continuous_playlist_id(playlist_id, register_id, count)
     else:
-        # StringLoader
-        if PC_AE != ae:
-            print('StringLoaderでの返却')
-            if is_random:
-                count = record.get('random_count')
-            else:
-                count = record.get('_count')
-            title = record.get('titles')[int(count)]
-            return {
-                'headers': {
-                    "Content-type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                'statusCode': 200,
-                'body': '{"title":"'+title+'"}',
-            }
         # IPを確認
         isPublishedUser = False
         regist_ip_address = record.get('ip_address', None)
@@ -109,6 +93,27 @@ def main(event, context):
         print('isPublishedUser:', isPublishedUser)
         urls = record.get('urls')
         titles = record.get('titles')
+
+        # StringLoader
+        if PC_AE != ae:
+            print('StringLoaderでの返却')
+            if is_random:
+                count = record.get('random_count')
+            else:
+                count = record.get('_count')
+            title = titles[int(count)]
+            if isPublishedUser:
+                # 登録者はタイトルを返さない(タイミングがズレます、マジで) ランダムなければ+1と踏めたけどランダムのせいで無理 間違えたの返すくらいなら無を返します
+                title = ''
+            return {
+                'headers': {
+                    "Content-type": "text/html; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                'statusCode': 200,
+                'body': '{"title":"'+title+'"}',
+            }
+
         # 登録者はカウントアップ
         if isPublishedUser:
             count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
