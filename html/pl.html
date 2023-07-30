@@ -43,7 +43,7 @@
             function doCreateURL() {
                 const inputText = document.getElementById("input").value.trim();
                 const isRandom = document.getElementById('isRandom').checked;
-                const uuid = generateUuid();
+                let uuid = generateUuid();
                 if (isRandom) {
                     uuid = 'random-' + uuid;
                 }
