@@ -5,9 +5,12 @@ from datetime import datetime, timedelta
 import random
 import ddbutils
 import ytutils
+import time
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+
+regist_lambda_name = os.environ['REGIST_LAMBDA_NAME']
 
 PC_UA1 = 'Mozilla/5.0'
 PC_UA2 = 'NSPlayer'
@@ -47,6 +50,7 @@ def main(event, context):
     queryStringParameters = event.get('queryStringParameters')
     register_id = ''
     is_random = False
+    is_first = False
     if queryStringParameters is not None:
         register_id = queryStringParameters.get('id', '')
         # register_idにrandomが含まれる文字列の場合
@@ -54,93 +58,115 @@ def main(event, context):
             is_random = True
 
     print('register_id:', register_id)
+    print('受信ip_address:', ip_address)
 
     count = 0
+
+    # StringLoader対応
+    if PC_AE != ae:
+        count = 0
+        time.sleep(1.5)  # YTTL 共通 1.5
+        record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
+        if record is None:
+            time.sleep(1.5)  # YTTL 予備 1.5
+            record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
+            if record is None:
+                print('Record None')
+                return return404()
+            if is_random:
+                count = record.get('random_count')
+            else:
+                count = record.get('_count')
+        else:
+            isPublishedUser = False
+            regist_ip_address = record.get('ip_address', None)
+            if ip_address == regist_ip_address:
+                isPublishedUser = True
+            if not isPublishedUser:
+                print('DEBUG 1秒待機前', record)
+                time.sleep(1)  # YTTL 非ホスト 1
+                record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
+                print('DEBUG 1秒待機後', record)
+            if is_random:
+                count = record.get('random_count')
+            else:
+                count = record.get('_count')
+        titles = record.get('titles')
+        title = titles[int(count)]
+        print('StringLoaderでの返却', title, ip_address)
+        return {
+            'headers': {
+                "Content-type": "text/html; charset=utf-8",
+                "Access-Control-Allow-Origin": "*",
+            },
+            'statusCode': 200,
+            'body': '{"title":"'+title+'"}',
+        }
 
     # チャンネルが存在するか確認
     record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
 
-    print('受信ip_address:', ip_address)
     # チャンネルが存在しない場合は新規登録し0番を返却
     if record is None:
+        print('初回登録')
         try:
-            print('初回登録')
-            # Youtubeから取得
-            video_list = ytutils.ytapi_search_playlist(playlist_id)
+            is_first = True
+            payload = {"register_id": register_id, "playlist_id": playlist_id, "ip_address": ip_address}
+            # Lambda関数を呼び出し登録する。同期。
+            _ = boto3.client('lambda').invoke(
+                FunctionName=regist_lambda_name,
+                InvocationType='RequestResponse',  # 同期
+                Payload=json.dumps(payload),
+            )
+            record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
+            if record is None:
+                print('Error Record None')
+                return return404()
         except Exception as e:
-            print('ytapi_search_playlist Error: ', e)
+            print('regist Error: ', e)
             return return404()
-        print('video_list', video_list)
-        if len(video_list) == 0:
-            return return404()
-        urls = video_list['videos']['urls']
-        titles = video_list['videos']['titles']
-        # url = urls[0]
-        # title = titles[0]
-        # DynamoDBに登録
-        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(12), register_id)
+
+    # IPを確認
+    isPublishedUser = False
+    regist_ip_address = record.get('ip_address', None)
+    if ip_address == regist_ip_address:
+        isPublishedUser = True
+    urls = record.get('urls')
+    titles = record.get('titles')
+
+    # count値を取得
+    if isPublishedUser:
         if is_random:
             count = random.randint(0, len(urls)-1)
-            print('count(random regist):', count)
+            print('count(random):', count)
             ddbutils.update_randcount_continuous_playlist_id(playlist_id, register_id, count)
-    else:
-        # IPを確認
-        isPublishedUser = False
-        regist_ip_address = record.get('ip_address', None)
-        if ip_address == regist_ip_address:
-            isPublishedUser = True
-        print('登録ip_address:', regist_ip_address)
-        print('isPublishedUser:', isPublishedUser)
-        urls = record.get('urls')
-        titles = record.get('titles')
-
-        # StringLoader
-        if PC_AE != ae:
-            print('StringLoaderでの返却')
-            if is_random:
-                count = record.get('random_count')
-            else:
-                count = record.get('_count')
-            title = titles[int(count)]
-            if isPublishedUser:
-                # 登録者はタイトルを返さない(タイミングがズレます、マジで) ランダムなければ+1と踏めたけどランダムのせいで無理 間違えたの返すくらいなら無を返します
-                title = ''
-            return {
-                'headers': {
-                    "Content-type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                'statusCode': 200,
-                'body': '{"title":"'+title+'"}',
-            }
-
-        # 登録者はカウントアップ
-        if isPublishedUser:
-            count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
-            count = int(count)
-            print(f'count(up): {count}')
-            # 配列越えの時に0に戻す
-            if count >= len(urls):
-                count = 0
-                ddbutils.reset_continuous_playlist_id(playlist_id, register_id)
-                print('count(reset): 0')
-            if is_random:
-                count = random.randint(0, len(urls)-1)
-                print('count(random):', count)
-                ddbutils.update_randcount_continuous_playlist_id(playlist_id, register_id, count)
         else:
-            if is_random:
-                count = record.get('random_count')
-                print('count(random そのまま):', count)
+            if is_first:
+                count = 0
+                print('count(first regist):', count)
             else:
-                count = record.get('_count')
-                print(f'count(そのまま): {count}')
-        print('count:', int(count))
+                count = ddbutils.countup_continuous_playlist_id(playlist_id, register_id)
+                count = int(count)
+                print(f'count(up): {count}')
+                # 配列越えの時に0に戻す
+                if count >= len(urls):
+                    count = 0
+                    ddbutils.reset_continuous_playlist_id(playlist_id, register_id)
+                    print('count(reset): 0')
+    else:
+        time.sleep(2)  # メイン処理 非ホスト 2
+        if is_random:
+            count = record.get('random_count')
+            print('count(random そのまま):', count)
+        else:
+            count = record.get('_count')
+            print(f'count(そのまま): {count}')
+        count = int(count)
+    print('isPublishedUser:', isPublishedUser)  # 登録者かどうか(scopeはここ)
 
     url = urls[count]
     title = titles[count]
-    print('返却URL')
-    print(url, title)
+    print('通常アクセス', title, ip_address)
     if QUEST_UA in ua:
         # Quest処理
         print('Quest Request')
