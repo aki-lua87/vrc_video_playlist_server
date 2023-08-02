@@ -154,7 +154,9 @@ def main(event, context):
                     ddbutils.reset_continuous_playlist_id(playlist_id, register_id)
                     print('count(reset): 0')
     else:
-        time.sleep(2)  # メイン処理 非ホスト 2
+        time.sleep(3)  # メイン処理 非ホスト 2
+        # 非ホストの場合待機後再度取得
+        record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
         if is_random:
             count = record.get('random_count')
             print('count(random そのまま):', count)
