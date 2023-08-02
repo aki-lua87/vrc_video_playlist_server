@@ -140,6 +140,43 @@ functions:
           path: /yt/ch/{channel_id}/titles # 新エンドポイント
           method: get
           cors: true
+  # 動画取得(プレイリスト)
+  get_yt_playlist:
+    handler: src/lambda/get_yt_playlist/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_playlist/handler.py
+        - addon/yt-dlp
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN: ${self:custom.cf_dmain}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /yt/pl/{playlist_id}/video
+          method: get
+          cors: true
+  # タイトルリスト取得
+  get_yt_playlist_titles:
+    handler: src/lambda/get_yt_playlist_titles/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_playlist_titles/handler.py
+    environment:
+      API_KEY: ${self:custom.yt_api_key}
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      CF_DOMAIN: ${self:custom.cf_dmain}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /yt/pl/{playlist_id}/titles 
+          method: get
+          cors: true
   get_ytlive_channel:
     handler: src/lambda/get_ytlive_channel/handler.main
     package:

@@ -35,6 +35,20 @@ def getVideoList(channel_id):
     return record
 
 
+# プレイリストIDに紐づくリストを取得
+def getPlaylistVideos(playlist_id):
+    response = table.get_item(
+        Key={
+            'user_id': 'list_yt_pl',
+            'video_id': f'{playlist_id}',
+        }
+    )
+    record = response.get('Item')
+    if record is None:
+        return None
+    return record
+
+
 def getQueryVideoList(q):
     response = table.get_item(
         Key={
@@ -102,6 +116,19 @@ def registVideoListV2(video_datas, index_create):
             'urls': video_datas['videos']['urls'],
             'live': video_datas['live']['url'],
             'is_exec_index_create': index_create,
+            'latest_update': now.strftime('%Y%m%d%H'),
+        }
+    )
+
+
+def registPlaylistVideos(video_datas):
+    now = datetime.datetime.now()
+    table.put_item(
+        Item={
+            'user_id': 'list_yt_pl',
+            'video_id': video_datas['playlistId'],
+            'titles': video_datas['videos']['titles'],
+            'urls': video_datas['videos']['urls'],
             'latest_update': now.strftime('%Y%m%d%H'),
         }
     )
