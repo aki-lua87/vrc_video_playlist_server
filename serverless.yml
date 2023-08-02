@@ -107,8 +107,8 @@ functions:
           method: get
           cors: true
       - http:
-          path: /videos/yt/ch/{channel_id}
-          method: head
+          path: /yt/ch/{channel_id}/video # 新エンドポイント
+          method: get
           cors: true
   # リスト取得
   get_yt_channel_list:
@@ -134,10 +134,10 @@ functions:
     events:
       - http:
           path: /videos/yt/chlist/{channel_id}
-          method: head
+          method: get
           cors: true
       - http:
-          path: /videos/yt/chlist/{channel_id}
+          path: /yt/ch/{channel_id}/titles # 新エンドポイント
           method: get
           cors: true
   # batch_tver_video_update:
@@ -245,10 +245,6 @@ functions:
           path: /videos/ytlive/ch/{channel_id}
           method: get
           cors: true
-      - http:
-          path: /videos/ytlive/ch/{channel_id}
-          method: head
-          cors: true
   get_yt_query:
     handler: src/lambda/get_yt_query/handler.main
     package:
@@ -273,10 +269,6 @@ functions:
           path: /videos/yt/query
           method: get
           cors: true
-      - http:
-          path: /videos/yt/query
-          method: head
-          cors: true
   # リスト取得
   get_yt_query_list:
     handler: src/lambda/get_yt_query_list/handler.main
@@ -299,10 +291,6 @@ functions:
       - { Ref: UtilsLayerLambdaLayer }
       - { Ref: PythonRequirementsLambdaLayer }
     events:
-      - http:
-          path: /videos/yt/query/list
-          method: head
-          cors: true
       - http:
           path: /videos/yt/query/list
           method: get
