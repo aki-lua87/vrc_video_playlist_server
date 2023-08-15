@@ -1,5 +1,4 @@
 import os
-import urllib.request
 import json
 import boto3
 from datetime import datetime, timedelta
@@ -21,17 +20,17 @@ URL_404 = f'{cf_domain}/nf.mp4'
 
 def main(event, context):
     print('event:', event)
-    channel_id = event['pathParameters'].get('channel_id')
-    channel_id = channel_id.strip()
+    playlist_id = event['pathParameters'].get('playlist_id')
+    playlist_id = playlist_id.strip()
     queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
     ae = event.get('headers').get('Accept-Encoding', '')
-    print('channel_id:', channel_id)
+    print('playlist_id:', playlist_id)
     print('httpMethod:', httpMethod)
     print('User-Agent:', ua)
     print('Accept-Encoding:', ae)
-    if channel_id is None or queryStringParameters is None:
+    if playlist_id is None or queryStringParameters is None:
         return {
             'headers': {
                 "Access-Control-Allow-Origin": "*"
@@ -44,23 +43,18 @@ def main(event, context):
                 }
             )
         }
-    before = queryStringParameters.get('n', 0)
-    b_int = int(before)
-    url, title = getVideoURL(channel_id, b_int)
+    number_srt = queryStringParameters.get('n', 0)
+    number = int(number_srt)
+    url, title = getVideoURL(playlist_id, number)
     if QUEST_UA in ua:
-        # Quest処理
+        # Quest処理 urlを上書き
         print('Quest Request')
         url = resolvURL(url)
     elif ae == PC_AE:
         # PC処理
-        # print('PC Request::: 特別対応実施中')
         print('PC Request')
-        # url = resolvURL(url)
     else:
-        # Other Youtubeにリダイレクト
-        print('Not VRC Request or StringLoader')
-
-        # YTTL JSONを返却
+        # Other YTTL JSONを返却
         return {
             'headers': {
                 "Content-type": "text/html; charset=utf-8",
@@ -93,10 +87,10 @@ def resolvURL(url):
     return quest_url
 
 
-def getVideoURL(channel_id, n):
+def getVideoURL(playlist_id, n):
     is_update = False
     # Videoのlistを取得
-    v_list = ddbutils.getVideoList(channel_id)
+    v_list = ddbutils.getPlaylistVideos(playlist_id)
     if v_list is None:
         is_update = True
     else:
@@ -107,18 +101,13 @@ def getVideoURL(channel_id, n):
         nowstr = now.strftime('%Y%m%d%H')
         if (latestDateStr != nowstr):
             is_update = True
-    if (is_update):
+    if is_update:
         # 更新
         print('update')
-        try:
-            data = ytutils.ytapi_search_channelId(channel_id)
-            ddbutils.registVideoListV2(data, True)
-            urls = data['videos']['urls']
-            titles = data['videos']['titles']
-        except Exception as e:
-            print('[WARN]', e)
-            urls = v_list['urls']
-            titles = v_list['titles']
+        data = ytutils.ytapi_search_playlist(playlist_id)
+        ddbutils.registPlaylistVideos(data)
+        urls = data['videos']['urls']
+        titles = data['videos']['titles']
     else:
         urls = v_list['urls']
         titles = v_list['titles']
@@ -127,13 +116,6 @@ def getVideoURL(channel_id, n):
         return URL_404
     print(titles[n])
     return urls[n], titles[n]
-
-
-def getVideoPage(url):
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as res:
-        body = res.read().decode('utf-8')
-    return body
 
 
 def get_ttl():

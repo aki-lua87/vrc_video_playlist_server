@@ -107,8 +107,8 @@ functions:
           method: get
           cors: true
       - http:
-          path: /videos/yt/ch/{channel_id}
-          method: head
+          path: /yt/ch/{channel_id}/video # 新エンドポイント
+          method: get
           cors: true
   # リスト取得
   get_yt_channel_list:
@@ -134,94 +134,49 @@ functions:
     events:
       - http:
           path: /videos/yt/chlist/{channel_id}
-          method: head
-          cors: true
-      - http:
-          path: /videos/yt/chlist/{channel_id}
           method: get
           cors: true
-  # batch_tver_video_update:
-  #   handler: src/lambda/batch_tver_video_update/handler.main
-  #   timeout: 300
-  #   package:
-  #     include:
-  #       - src/lambda/batch_tver_video_update/handler.py
-  #   environment:
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    # events:
-      # - schedule: cron(30 2 * * ? *)
-      # - schedule: cron(30 18 * * ? *)
-      # - schedule: cron(30 10 * * ? *)
-    # layers:
-    #   - { Ref: UtilsLayerLambdaLayer }
-    #   - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-    #   - { Ref: PythonRequirementsLambdaLayer }
-    #   - { Ref: ChromeLayerLambdaLayer }
-  # batch_tver_lineup_update:
-  #   handler: src/lambda/batch_tver_lineup_update/handler.main
-  #   timeout: 300
-  #   package:
-  #     include:
-  #       - src/lambda/batch_tver_lineup_update/handler.py
-  #   environment:
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-  #   events:
-  #     - schedule: cron(0 12 1 * ? *)
-  #   layers:
-  #     - { Ref: UtilsLayerLambdaLayer }
-  #     - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-  # get_tver_channel:
-  #   handler: src/lambda/get_tver_channel/handler.main
-  #   package:
-  #     include:
-  #       - src/lambda/get_tver_channel/handler.py
-  #   environment:
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-  #     CF_DOMAIN:
-  #       Fn::Join:
-  #         - ""
-  #         - - "https://"
-  #           - Fn::GetAtt:
-  #               - ContentsCloudFront
-  #               - DomainName
-  #   layers:
-  #     - { Ref: UtilsLayerLambdaLayer }
-  #   events:
-  #     - http:
-  #         # ?n=n
-  #         path: /videos/tver/{attribute}
-  #         method: get
-  #         cors: true
-  #     - http:
-  #         path: /videos/tver/{attribute}
-  #         method: head
-  #         cors: true
-  # get_tver_search_lineup:
-  #   handler: src/lambda/get_tver_search_lineup/handler.main
-  #   package:
-  #     include:
-  #       - src/lambda/get_tver_search_lineup/handler.py
-  #   environment:
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-  #     CF_DOMAIN:
-  #       Fn::Join:
-  #         - ""
-  #         - - "https://"
-  #           - Fn::GetAtt:
-  #               - ContentsCloudFront
-  #               - DomainName
-  #   layers:
-  #     - { Ref: UtilsLayerLambdaLayer }
-  #     - arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-python38-beautifulsoup4:13
-  #   events:
-  #     - http:
-  #         path: /videos/tv/lp
-  #         method: get
-  #         cors: true
-  #     - http:
-  #         path: /videos/tv/lp
-  #         method: head
-  #         cors: true
+      - http:
+          path: /yt/ch/{channel_id}/titles # 新エンドポイント
+          method: get
+          cors: true
+  # 動画取得(プレイリスト)
+  get_yt_playlist:
+    handler: src/lambda/get_yt_playlist/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_playlist/handler.py
+        - addon/yt-dlp
+    environment:
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      API_KEY: ${self:custom.yt_api_key}
+      CF_DOMAIN: ${self:custom.cf_dmain}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /yt/pl/{playlist_id}/video
+          method: get
+          cors: true
+  # タイトルリスト取得
+  get_yt_playlist_titles:
+    handler: src/lambda/get_yt_playlist_titles/handler.main
+    package:
+      include:
+        - src/lambda/get_yt_playlist_titles/handler.py
+    environment:
+      API_KEY: ${self:custom.yt_api_key}
+      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+      CF_DOMAIN: ${self:custom.cf_dmain}
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /yt/pl/{playlist_id}/titles 
+          method: get
+          cors: true
   get_ytlive_channel:
     handler: src/lambda/get_ytlive_channel/handler.main
     package:
@@ -244,10 +199,6 @@ functions:
       - http:
           path: /videos/ytlive/ch/{channel_id}
           method: get
-          cors: true
-      - http:
-          path: /videos/ytlive/ch/{channel_id}
-          method: head
           cors: true
   get_yt_query:
     handler: src/lambda/get_yt_query/handler.main
@@ -273,10 +224,6 @@ functions:
           path: /videos/yt/query
           method: get
           cors: true
-      - http:
-          path: /videos/yt/query
-          method: head
-          cors: true
   # リスト取得
   get_yt_query_list:
     handler: src/lambda/get_yt_query_list/handler.main
@@ -299,10 +246,6 @@ functions:
       - { Ref: UtilsLayerLambdaLayer }
       - { Ref: PythonRequirementsLambdaLayer }
     events:
-      - http:
-          path: /videos/yt/query/list
-          method: head
-          cors: true
       - http:
           path: /videos/yt/query/list
           method: get
@@ -372,24 +315,6 @@ functions:
       - { Ref: UtilsLayerLambdaLayer }
       - { Ref: PythonRequirementsLambdaLayer }
     reservedConcurrency: 1
-  # リスト取得 あとで消す
-  # get_yt_channel_list_json:
-  #   handler: src/lambda/get_yt_channel_list_json/handler.main
-  #   timeout: 30
-  #   package:
-  #     include:
-  #       - src/lambda/get_yt_channel_list_json/handler.py
-  #   environment:
-  #     API_KEY: ${self:custom.yt_api_key}
-  #     VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-  #   layers:
-  #     - { Ref: UtilsLayerLambdaLayer }
-  #     - { Ref: PythonRequirementsLambdaLayer }
-  #   events:
-  #     - http:
-  #         path: /videos/yt/chlist/{channel_id}/json
-  #         method: get
-  #         cors: true
   # リスト取得 馬鹿重い
   get_yt_chs_description:
     handler: src/lambda/get_yt_chs_description/handler.main
