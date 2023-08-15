@@ -94,14 +94,20 @@ def resolvURL(url):
 
 
 def getVideoURL(channel_id, n):
+    is_update = False
     # Videoのlistを取得
     v_list = ddbutils.getVideoList(channel_id)
-    # 更新有無の確認
-    latestDateStr = v_list.get('latest_update', 'NoData')
-    print('latestDateStr:', latestDateStr)
-    now = datetime.now()
-    nowstr = now.strftime('%Y%m%d%H')
-    if (latestDateStr != nowstr):
+    if v_list is None:
+        is_update = True
+    else:
+        # 更新有無の確認
+        latestDateStr = v_list.get('latest_update', 'NoData')
+        print('latestDateStr:', latestDateStr)
+        now = datetime.now()
+        nowstr = now.strftime('%Y%m%d%H')
+        if (latestDateStr != nowstr):
+            is_update = True
+    if (is_update):
         # 更新
         print('update')
         try:
