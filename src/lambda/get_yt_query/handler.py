@@ -6,9 +6,16 @@ from datetime import datetime, timedelta
 import ddbutils
 import ytutils
 
+PC_UA1 = 'Mozilla/5.0'
+PC_UA2 = 'NSPlayer'
+QUEST_UA = 'stagefright'
+PC_AE = 'identity'  # 'Accept-Encoding': 'identity'
+
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
+
 cf_domain = os.environ['CF_DOMAIN']
+URL_404 = f'{cf_domain}/nf.mp4'
 
 
 def main(event, context):
@@ -16,6 +23,7 @@ def main(event, context):
     queryStringParameters = event.get('queryStringParameters')
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
+    ae = event.get('headers').get('Accept-Encoding', '')
     print('httpMethod:', httpMethod)
     print('User-Agent:', ua)
     if queryStringParameters is None:
@@ -31,42 +39,26 @@ def main(event, context):
                 }
             )
         }
-    before = queryStringParameters.get('n', 0)
+    number_srt = queryStringParameters.get('n', 0)
     query = queryStringParameters.get('q', '')
-    b_int = int(before)
-    print(query, before)
-    try:
-        url = getVideoURL(b_int, query)
-    except BaseException:
-        url = f'{cf_domain}/nf.mp4'
-    if 'Android' in ua:
-        # Quest処理
-        print('Quest:', ua)
-        quest_url = ddbutils.getQuestURL(url)
-        if quest_url is not None:
-            print('use DynamoDB record')
-            return {
-                'headers': {
-                    "Content-type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                    "location": quest_url
-                },
-                'statusCode': 302,
-                'body': "",
-            }
-        b = ytutils.exec_ytdlp_cmd(url)
-        quest_url = b.decode()
-        print(quest_url)
-        ttl = get_ttl()
-        ddbutils.registQuestURL(url, quest_url, ttl)
+    number = int(number_srt)
+    url, title = getVideoURL(number, query)
+    if QUEST_UA in ua:
+        # Quest処理 urlを上書き
+        print('Quest Request')
+        url = resolvURL(url)
+    elif ae == PC_AE:
+        # PC処理
+        print('PC Request')
+    else:
+        # Other YTTL JSONを返却
         return {
             'headers': {
                 "Content-type": "text/html; charset=utf-8",
                 "Access-Control-Allow-Origin": "*",
-                "location": quest_url
             },
-            'statusCode': 302,
-            'body': "",
+            'statusCode': 200,
+            'body': '{"title":"' + title + '"}',
         }
     return {
         'headers': {
@@ -80,34 +72,35 @@ def main(event, context):
 
 
 def getVideoURL(n, q):
+    is_update = False
     # Videoのlistを取得
     v_list = ddbutils.getQueryVideoList(q)
-    # 更新有無の確認
-    if v_list is not None:
-        latestDateStr = v_list.get('latest_update', 'NoData')
+    if v_list is None:
+        is_update = True
     else:
-        latestDateStr = 'Nodata'
-    print('latestDateStr:', latestDateStr)
-    now = datetime.now()
-    nowstr = now.strftime('%Y%m%d%H')
-    if (latestDateStr != nowstr):
+        # 更新有無の確認
+        latestDateStr = v_list.get('latest_update', 'NoData')
+        print('latestDateStr:', latestDateStr)
+        now = datetime.now()
+        nowstr = now.strftime('%Y%m%d%H')
+        if (latestDateStr != nowstr):
+            is_update = True
+    if is_update:
         # 更新
         print('update')
-        try:
-            data = ytutils.ytapi_search_query(q)
-        except Exception as e:
-            print('[WARN] 更新失敗', e)
-            return v_list['urls'][n]
-        ddbutils.registQueryVideoList(data, True)
+        data = ytutils.ytapi_search_query(q)
+        ddbutils.registQueryVideoList(data)
         urls = data['videos']['urls']
         titles = data['videos']['titles']
     else:
         urls = v_list['urls']
         titles = v_list['titles']
-    if len(urls) < n:
-        return f'{cf_domain}/nf.mp4'
-    print(urls[n], titles[n])
-    return urls[n]
+    # n バリデーション
+    if len(urls) <= n:
+        print('404::', titles)
+        return URL_404, 'Not Found'
+    print(titles[n])
+    return urls[n], titles[n]
 
 
 def returnBadRequest():
@@ -141,3 +134,16 @@ def get_ttl():
     start = datetime.now()
     expiration_date = start + timedelta(minutes=15)
     return round(expiration_date.timestamp())
+
+
+def resolvURL(url):
+    quest_url = ddbutils.getQuestURL(url)
+    if quest_url is not None:
+        print('use DynamoDB record')
+        return quest_url
+    b = ytutils.exec_ytdlp_cmd(url)
+    quest_url = b.decode()
+    print(quest_url)
+    ttl = get_ttl()
+    ddbutils.registQuestURL(url, quest_url, ttl)
+    return quest_url

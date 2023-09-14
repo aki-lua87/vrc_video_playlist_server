@@ -224,6 +224,10 @@ functions:
           path: /videos/yt/query
           method: get
           cors: true
+      - http:
+          path: /yt/search/video # 新エンドポイント
+          method: get
+          cors: true
   # リスト取得
   get_yt_query_list:
     handler: src/lambda/get_yt_query_list/handler.main
@@ -248,6 +252,10 @@ functions:
     events:
       - http:
           path: /videos/yt/query/list
+          method: get
+          cors: true
+      - http:
+          path: /yt/search/titles # 新エンドポイント
           method: get
           cors: true
   get_yt_ch_all:

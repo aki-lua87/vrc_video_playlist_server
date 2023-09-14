@@ -62,7 +62,7 @@ def getQueryVideoList(q):
     return record
 
 
-def registQueryVideoList(video_datas, index_create):
+def registQueryVideoList(video_datas):
     now = datetime.datetime.now()
     table.put_item(
         Item={
@@ -70,7 +70,6 @@ def registQueryVideoList(video_datas, index_create):
             'video_id': video_datas['query'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
-            'is_exec_index_create': index_create,
             'latest_update': now.strftime('%Y%m%d%H'),
         }
     )
