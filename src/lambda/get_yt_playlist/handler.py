@@ -113,7 +113,8 @@ def getVideoURL(playlist_id, n):
         titles = v_list['titles']
     # n バリデーション
     if len(urls) <= n:
-        return URL_404
+        print('404::', titles)
+        return URL_404, 'Not Found'
     print(titles[n])
     return urls[n], titles[n]
 

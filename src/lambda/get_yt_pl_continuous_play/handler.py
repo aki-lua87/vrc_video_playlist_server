@@ -120,7 +120,7 @@ def main(event, context):
             )
             record = ddbutils.is_exist_continuous_playlist_id(playlist_id, register_id)
             if record is None:
-                print('Error Record None')
+                print('Error Record None[初回登録Lambdaエラー]')
                 return return404()
         except Exception as e:
             print('regist Error: ', e)

@@ -110,7 +110,7 @@ def ytapi_search_query(query):
         part='snippet',
         type='video',
         order='date',
-        maxResults=20
+        maxResults=21
     ).execute()
 
     print(search_response)
@@ -216,6 +216,7 @@ def ytapi_search_playlist(pid):
         part='snippet',
         playlistId=pid,
         maxResults=50,
+        # order='date', 無い
         fields="items/snippet/title,items/snippet/resourceId/videoId"
     ).execute()
 
