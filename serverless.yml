@@ -341,6 +341,50 @@ functions:
           path: /videos/yt/chs/description
           method: get
           cors: true
+  get_ss_video:
+    timeout: 30
+    handler: src/lambda/get_ss_video/handler.main
+    package:
+      include:
+        - src/lambda/get_ss_video/handler.py
+    environment:
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /ss/video
+          method: get
+          cors: true
+  get_ss_video_titles:
+    timeout: 30
+    handler: src/lambda/get_ss_video_titles/handler.main
+    package:
+      include:
+        - src/lambda/get_ss_video_titles/handler.py
+    environment:
+      CF_DOMAIN:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Fn::GetAtt:
+                - ContentsCloudFront
+                - DomainName
+    layers:
+      - { Ref: UtilsLayerLambdaLayer }
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http:
+          path: /ss/titles
+          method: get
+          cors: true
 resources:
   Resources:
     vrcVideoTable:
