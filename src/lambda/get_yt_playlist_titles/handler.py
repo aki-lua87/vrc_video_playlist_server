@@ -50,7 +50,7 @@ def getVideoURL(playlist_id):
         latestDateStr = v_list.get('latest_update', 'NoData')
         print('latestDateStr:', latestDateStr)
         now = datetime.now()
-        nowstr = now.strftime('%Y%m%d%H')
+        nowstr = now.strftime('%Y%m%d')
         if (latestDateStr != nowstr):
             print('latestDateStr != nowstr')
             is_update = True

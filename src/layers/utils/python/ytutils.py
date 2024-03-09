@@ -212,16 +212,6 @@ def ytapi_search_playlist(pid):
         developerKey=API_KEY
     )
 
-    search_response = youtube.playlistItems().list(
-        part='snippet',
-        playlistId=pid,
-        maxResults=50,
-        # order='date', 無い
-        fields="items/snippet/title,items/snippet/resourceId/videoId"
-    ).execute()
-
-    print(search_response)
-
     video_datas = {
         'playlistId': pid,
         'videos': {
@@ -229,11 +219,27 @@ def ytapi_search_playlist(pid):
             'urls': []
         }
     }
-    for search_result in search_response.get("items", []):
-        title = search_result["snippet"]["title"]
-        url = f'{YOUTUBE_URL}{search_result["snippet"]["resourceId"]["videoId"]}'
-        # auther = search_result["snippet"]["videoOwnerChannelTitle"]
-        video_datas['videos']['titles'].append(title)
-        video_datas['videos']['urls'].append(url)
-        # video_datas['videos']['authers'].append(auther)
+    max_loop = 10
+
+    search_request = youtube.playlistItems().list(
+        part='snippet',
+        playlistId=pid,
+        maxResults=50,
+        fields="nextPageToken,items/snippet/title,items/snippet/resourceId/videoId"
+    )
+    while search_request is not None:
+        print('loop_count:', max_loop)
+        max_loop = max_loop - 1
+        if max_loop <= 0:
+            break
+        search_response = search_request.execute()
+        for search_result in search_response.get("items", []):
+            title = search_result["snippet"]["title"]
+            url = f'{YOUTUBE_URL}{search_result["snippet"]["resourceId"]["videoId"]}'
+            video_datas['videos']['titles'].append(title)
+            video_datas['videos']['urls'].append(url)
+            print(f'{title}, {url}')
+        search_request = youtube.playlistItems().list_next(search_request, search_response)
+    # print(search_response)
+
     return video_datas
