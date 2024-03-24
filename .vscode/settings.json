@@ -1,5 +1,9 @@
 {
     "python.analysis.extraPaths": [
         "./src/layers/utils/python"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
 }
