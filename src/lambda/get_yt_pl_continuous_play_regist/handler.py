@@ -23,7 +23,7 @@ def main(event, context):
         return "exist record"
     try:
         video_list = ytutils.ytapi_search_playlist(playlist_id)
-        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(3), register_id)
+        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(6), register_id)
     except Exception as e:
         print(e)
         return "error"

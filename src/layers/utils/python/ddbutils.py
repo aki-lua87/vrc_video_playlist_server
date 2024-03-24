@@ -128,7 +128,7 @@ def registPlaylistVideos(video_datas):
             'video_id': video_datas['playlistId'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
-            'latest_update': now.strftime('%Y%m%d%H'),
+            'latest_update': now.strftime('%Y%m%d'),  # 1日単位で更新
         }
     )
 
@@ -247,7 +247,7 @@ def regist_continuous_playlist_video_list(video_datas, ip_address, ttl, id='', r
             'urls': video_datas['videos']['urls'],
             '_count': 0,
             'ip_address': ip_address,
-            'latest_update': now.strftime('%Y%m%d%H'),
+            'latest_update': now.strftime('%Y%m%d'),
             'random_count': random_count,
             'TTL': ttl
         }

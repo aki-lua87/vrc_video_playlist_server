@@ -46,7 +46,7 @@ def main(event, context):
     if QUEST_UA in ua:
         # Quest処理 urlを上書き
         print('Quest Request')
-        url = resolvURL(url)
+        # url = resolvURL(url)
     elif ae == PC_AE:
         # PC処理
         print('PC Request')

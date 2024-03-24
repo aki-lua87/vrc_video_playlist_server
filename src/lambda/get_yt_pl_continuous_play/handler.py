@@ -4,7 +4,6 @@ import boto3
 from datetime import datetime, timedelta
 import random
 import ddbutils
-import ytutils
 import time
 
 dynamodb = boto3.resource('dynamodb')
@@ -172,7 +171,7 @@ def main(event, context):
     if QUEST_UA in ua:
         # Quest処理
         print('Quest Request')
-        url = resolvURL(url)
+        # url = resolvURL(url)
     elif ae == PC_AE:
         # PC処理
         # print('PC Request::: 特別対応実施中')
@@ -190,19 +189,6 @@ def main(event, context):
         'statusCode': 302,
         'body': "",
     }
-
-
-def resolvURL(url):
-    quest_url = ddbutils.getQuestURL(url)
-    if quest_url is not None:
-        print('use DynamoDB record')
-        return quest_url
-    b = ytutils.exec_ytdlp_cmd(url)
-    quest_url = b.decode()
-    print(quest_url)
-    ttl = get_ttl_minute(15)
-    ddbutils.registQuestURL(url, quest_url, ttl)
-    return quest_url
 
 
 def get_ttl_minute(minute):
