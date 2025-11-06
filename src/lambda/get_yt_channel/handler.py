@@ -59,7 +59,7 @@ def main(event, context):
         print('PC Request Mode')
         if QUEST_MODE == 'true':
             url = resolvURL(url)
-            print('QUEST MODE:'+url)
+            print('QUEST MODE:', url)
     else:
         # Other Youtubeにリダイレクト
         print('StringLoader Mode')
