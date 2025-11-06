@@ -9,8 +9,8 @@ custom:
   contents_bucket: ${self:service}-${opt:stage}-bucket
   vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
-    dockerizePip: true
-    dockerImage: public.ecr.aws/sam/build-python3.9:latest
+    # dockerizePip: true
+    dockerImage: public.ecr.aws/sam/build-python3.12:latest
     useStaticCache: false
     useDownloadCache: false
     layer: true
@@ -26,12 +26,12 @@ custom:
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.10
   # provider: ${opt:stage}
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
-  timeout: 7
+  timeout: 20
   logRetentionInDays: 14
   tracing:
     apiGateway: true
@@ -60,6 +60,7 @@ layers:
     description: utils
     compatibleRuntimes:
       - python3.9
+      - python3.10
   # NOTE: ./src/layers/chromeにchromedriverとheadless-chromiumが必要
   # NOTE: バージョンは厳密なんだけど何入れて動いたかマジで忘れた
   # chromeLayer:
@@ -97,6 +98,7 @@ functions:
       VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
       API_KEY: ${self:custom.yt_api_key}
       CF_DOMAIN: ${self:custom.cf_dmain}
+      QUEST_MODE: "false" # 'true' or 'false'
     layers:
       - { Ref: UtilsLayerLambdaLayer }
       - { Ref: PythonRequirementsLambdaLayer }
