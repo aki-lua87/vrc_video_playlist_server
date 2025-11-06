@@ -18,6 +18,8 @@ PC_AE = 'identity'  # 'Accept-Encoding': 'identity'
 cf_domain = os.environ['CF_DOMAIN']
 URL_404 = f'{cf_domain}/nf.mp4'
 
+QUEST_MODE = os.environ.get('QUEST_MODE', 'true')
+
 
 def main(event, context):
     print('event:', event)
@@ -49,16 +51,18 @@ def main(event, context):
     url, title = getVideoURL(channel_id, b_int)
     if QUEST_UA in ua:
         # Quest処理
-        print('Quest Request')
-        # url = resolvURL(url)
+        print('Quest Request Mode')
+        url = resolvURL(url)
     elif ae == PC_AE:
         # PC処理
         # print('PC Request::: 特別対応実施中')
-        print('PC Request')
-        # url = resolvURL(url)
+        print('PC Request Mode')
+        if QUEST_MODE == 'true':
+            url = resolvURL(url)
+            print('QUEST MODE:'+url)
     else:
         # Other Youtubeにリダイレクト
-        print('Not VRC Request or StringLoader')
+        print('StringLoader Mode')
 
         # YTTL JSONを返却
         return {
@@ -81,9 +85,10 @@ def main(event, context):
 
 
 def resolvURL(url):
+    print('resolvURL:', url)
     quest_url = ddbutils.getQuestURL(url)
     if quest_url is not None:
-        print('use DynamoDB record')
+        print('use DynamoDB record:' + quest_url)
         return quest_url
     b = ytutils.exec_ytdlp_cmd(url)
     quest_url = b.decode()
