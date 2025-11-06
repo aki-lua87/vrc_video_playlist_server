@@ -20,7 +20,6 @@ cf_domain = os.environ['CF_DOMAIN']
 
 
 def main(event, context):
-    MODE = "v1"
     print('event:', event)
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
