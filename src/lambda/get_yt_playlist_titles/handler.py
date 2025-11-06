@@ -2,6 +2,7 @@
 import os
 import boto3
 from datetime import datetime
+import json
 
 import ddbutils
 import ytutils
@@ -24,16 +25,14 @@ def main(event, context):
     print('User-Agent:', ua)
     playlist_id = event['pathParameters'].get('playlist_id')
     playlist_id = playlist_id.strip()
-    print('channel_id:', playlist_id)
     titles = getVideoURL(playlist_id)
-    print('titles:', titles)
     return {
         'headers': {
             "Content-Type": "text/plain; charset=utf-8",
             "Access-Control-Allow-Origin": "*"
         },
         'statusCode': 200,
-        'body': ','.join(titles),
+        'body': json.dumps(titles, ensure_ascii=False),
     }
 
 
@@ -59,7 +58,7 @@ def getVideoURL(playlist_id):
         print('update')
         data = ytutils.ytapi_search_playlist(playlist_id)
         ddbutils.registPlaylistVideos(data)
-        titles = data['videos']['titles']
+        titles = data['videos']
     else:
-        titles = v_list['titles']
+        titles = v_list
     return titles

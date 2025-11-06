@@ -77,7 +77,7 @@ def getSearchVideoURL(attribute, text):
     urls = v_list['urls']
     titles = v_list['titles']
     for index, title in enumerate(titles):
-        if(text in title):
+        if (text in title):
             print(urls[index], title)
             return urls[index]
     # スカの場合はエラー動画へ

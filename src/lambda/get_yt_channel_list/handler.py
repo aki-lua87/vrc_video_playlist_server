@@ -1,4 +1,5 @@
 # VRCからコールするためにGET+動画をレスポンス
+import json
 import os
 import urllib.request
 import boto3
@@ -24,6 +25,7 @@ LOADER_UA = 'UnityPlayer'  # stringLoaderはこれ？
 
 
 def main(event, context):
+    MODE = "v1"
     print('event:', event)
     httpMethod = event.get('httpMethod')
     ua = event.get('headers').get('User-Agent', '')
@@ -32,17 +34,33 @@ def main(event, context):
     channel_id = event['pathParameters'].get('channel_id')
     channel_id = channel_id.strip()
     print('channel_id:', channel_id)
-    if LOADER_UA in ua:
-        # StringLoaderからなら文字列を返す
-        titles = getVideoURL(channel_id)
+    queryStringParameters = event.get('queryStringParameters')
+    if queryStringParameters is not None:
+        MODE = queryStringParameters.get('version', 'v1')
+    if (MODE == 'v2'):
+        videos = getVideoURL_V2(channel_id)
+        # videos をJSONに変換する
+        json_videos = json.dumps(videos, ensure_ascii=False)
         return {
             'headers': {
                 "Content-Type": "text/plain; charset=utf-8",
                 "Access-Control-Allow-Origin": "*"
             },
             'statusCode': 200,
-            'body': ','.join(titles),
+            'body': json_videos,
         }
+    else:
+        if LOADER_UA in ua:
+            # StringLoaderからなら文字列を返す
+            titles = getVideoURL(channel_id)
+            return {
+                'headers': {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*"
+                },
+                'statusCode': 200,
+                'body': ','.join(titles),
+            }
     isExist = ddbutils.isExistChannelID(channel_id)
     if not isExist:
         print('does not exist', event)
@@ -143,3 +161,29 @@ def getVideoURL(channel_id):
     else:
         titles = v_list['titles']
     return titles
+
+
+def getVideoURL_V2(channel_id):
+    # Videoのlistを取得
+    v_list = ddbutils.getVideoList(channel_id)
+    if v_list is None:
+        return None
+    # 更新有無の確認
+    latestDateStr = v_list.get('latest_update', 'NoData')
+    print('latestDateStr:', latestDateStr)
+    now = datetime.now()
+    nowstr = now.strftime('%Y%m%d%H')
+    if (latestDateStr != nowstr):
+        # 更新
+        print('update')
+        try:
+            data = ytutils.ytapi_search_channelId(channel_id)
+            ddbutils.registVideoListV2(data, True)
+            videos = data['videos']
+
+        except Exception as e:
+            print('[WARN]', e)
+            videos = v_list
+    else:
+        videos = v_list
+    return videos

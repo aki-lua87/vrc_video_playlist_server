@@ -45,7 +45,7 @@ BODY:
 登録したチャンネルの現在閲覧可能な動画について、VRChat内で参照できるようにするため、動画形式でリストを作成して公開するようにしてます。  
   
 URL: https://vrc.akakitune87.net/videos/yt/chlist/{チャンネルID}  
-METHOD: HEAD or GET  
+METHOD: GET  
 
 #### 3. 動画の取得  
 
@@ -54,10 +54,9 @@ n=0が最新動画で19に近づくほど古い動画になります。
 YoutubeDataAPIにて取得した情報を参照しているため、実際のサイトと異なる場合や20より動画数が下回る場合があります。
 リンク先に動画が存在しない場合、エラー動画へと飛びます。
   
-URL: https://vrc.akakitune87.net/videos/ytlive/ch/{チャンネルID}?n=[0~19の数字]  
-METHOD: HEAD or GET  
-
-※Quest対応
+URL: https://vrc.akakitune87.net/yt/ch/{channel_id}/video?n=[0~19の数字]  
+URL: https://vrc.akakitune87.net/yt/pl/{playlist_id}/video?n=[0~19の数字]  
+METHOD: GET  
 
 #### 4. ライブの取得(β)  
   
@@ -73,4 +72,3 @@ q=の値で指定した検索ワードの結果について再生できます。
 n=0が最新動画で19に近づくほど古い動画になります。  
 https://vrc.akakitune87.net/videos/yt/query?q=[検索キーワード]&n=[0~19の数字]  
 
-※Quest対応
