@@ -1,0 +1,26 @@
+# WSL からのデプロイ用
+# 初回のみ: cp .env.example .env して値を埋める → mise trust
+[tools]
+node = "24"
+
+[env]
+_.file = ".env"
+NODE_OPTIONS = "--no-deprecation"
+
+[tasks.deploy]
+description = "prod へデプロイ"
+run = "serverless deploy --stage prod"
+
+[tasks."deploy:dev"]
+description = "dev へデプロイ"
+run = "serverless deploy --stage dev"
+
+[tasks."deploy:fn"]
+description = "prod の関数を1つだけデプロイ (例: mise run deploy:fn get_yt_channel)"
+usage = 'arg "<function>"'
+run = 'serverless deploy function --function ${usage_function} --stage prod'
+
+[tasks.logs]
+description = "prod の関数ログを表示 (例: mise run logs get_yt_channel)"
+usage = 'arg "<function>"'
+run = 'aws logs tail /aws/lambda/vrc-video-api-prod-${usage_function} --region ap-northeast-1 --since 30m --format short'

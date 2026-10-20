@@ -1,16 +1,13 @@
 service: vrc-video-api
 
-plugins:
-  - serverless-python-requirements
-
 custom:
   s3_bucket: ${env:S3_PUBLIC_BUCKET}
   yt_api_key: ${env:API_KEY}
   contents_bucket: ${self:service}-${opt:stage}-bucket
   vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
-    # dockerizePip: true
-    dockerImage: public.ecr.aws/sam/build-python3.12:latest
+    dockerizePip: true
+    dockerImage: public.ecr.aws/sam/build-python3.13:latest
     useStaticCache: false
     useDownloadCache: false
     layer: true
@@ -26,7 +23,7 @@ custom:
 
 provider:
   name: aws
-  runtime: python3.10
+  runtime: python3.13
   # provider: ${opt:stage}
   lambdaHashingVersion: 20201221
   region: ap-northeast-1
@@ -47,6 +44,8 @@ package:
     - requirements.txt
     - serverless.yml
     - .env
+    - .env.example
+    - mise.toml
     - memo.txt
     - example.py
     - src/**
@@ -60,8 +59,7 @@ layers:
     name: ${opt:stage}-${self:service}-utilsLayer
     description: utils
     compatibleRuntimes:
-      - python3.9
-      - python3.10
+      - python3.13
   # NOTE: ./src/layers/chromeにchromedriverとheadless-chromiumが必要
   # NOTE: バージョンは厳密なんだけど何入れて動いたかマジで忘れた
   # chromeLayer:
@@ -116,7 +114,7 @@ functions:
   # リスト取得
   get_yt_channel_list:
     handler: src/lambda/get_yt_channel_list/handler.main
-    timeout: 30
+    timeout: 29
     package:
       include:
         - src/lambda/get_yt_channel_list/handler.py
@@ -234,7 +232,7 @@ functions:
   # リスト取得
   get_yt_query_list:
     handler: src/lambda/get_yt_query_list/handler.main
-    timeout: 30
+    timeout: 29
     package:
       include:
         - src/lambda/get_yt_query_list/handler.py
@@ -263,7 +261,7 @@ functions:
           cors: true
   get_yt_ch_all:
     handler: src/lambda/get_yt_ch_all/handler.main
-    timeout: 30
+    timeout: 29
     package:
       include:
         - src/lambda/get_yt_ch_all/handler.py
@@ -329,7 +327,7 @@ functions:
   # リスト取得 馬鹿重い
   get_yt_chs_description:
     handler: src/lambda/get_yt_chs_description/handler.main
-    timeout: 30
+    timeout: 29
     package:
       include:
         - src/lambda/get_yt_chs_description/handler.py
@@ -346,7 +344,7 @@ functions:
           cors: true
   # スプレッドシート
   get_ss_video:
-    timeout: 30
+    timeout: 29
     handler: src/lambda/get_ss_video/handler.main
     package:
       include:
@@ -368,7 +366,7 @@ functions:
           method: get
           cors: true
   get_ss_video_titles:
-    timeout: 30
+    timeout: 29
     handler: src/lambda/get_ss_video_titles/handler.main
     package:
       include:

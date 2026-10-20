@@ -3,7 +3,6 @@ import json
 import os
 import urllib.request
 import boto3
-import base64
 from datetime import datetime
 
 import ddbutils
@@ -52,7 +51,7 @@ def main(event, context):
     else:
         if LOADER_UA in ua:
             # StringLoaderからなら文字列を返す
-            titles = getVideoURL(channel_id)
+            titles = getVideoURL(channel_id) or []
             return {
                 'headers': {
                     "Content-Type": "text/plain; charset=utf-8",
@@ -61,11 +60,19 @@ def main(event, context):
                 'statusCode': 200,
                 'body': ','.join(titles),
             }
-    isExist = ddbutils.isExistChannelID(channel_id)
+    isExist, _ = ddbutils.isExistChannelID(channel_id)
     if not isExist:
         print('does not exist', event)
-        return base64.b64encode('video not exist')
-    record = ddbutils.getVideoList(channel_id)
+        return {
+            'headers': {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Access-Control-Allow-Origin": "*"
+            },
+            'statusCode': 404,
+            'body': 'video not exist',
+        }
+    # リスト未作成の場合は下の更新処理で作成する
+    record = ddbutils.getVideoList(channel_id) or {}
     isExecIndexCreate = record.get('is_exec_index_create', True)
     latestDateStr = record.get('latest_update', 'NoData')
     print('latestDateStr:', latestDateStr)
