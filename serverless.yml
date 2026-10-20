@@ -51,6 +51,7 @@ package:
     - example.py
     - src/**
     - html/**
+    - tests/**
     # NOTE: ./addonにyt-dlpが必要
     - addon/**
 layers:

@@ -129,8 +129,27 @@ def registPlaylistVideos(video_datas):
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
             'latest_update': now.strftime('%Y%m%d'),  # 1日単位で更新
+            'playlist_title': video_datas.get('playlist_title', ''),
+            # Record attempts too, so an optional metadata failure is not retried
+            # on every /titles request. Failed lookups replace stale names with ''.
+            'playlist_title_checked': now.strftime('%Y%m%d'),
         }
     )
+
+
+def updatePlaylistTitle(playlist_id, title, checked_date):
+    """Backfill legacy records without replacing their video list/update date."""
+    response = table.update_item(
+        Key={'user_id': 'list_yt_pl', 'video_id': playlist_id},
+        UpdateExpression='SET #title = :title, #checked = :checked',
+        ExpressionAttributeNames={
+            '#title': 'playlist_title', '#checked': 'playlist_title_checked'
+        },
+        ExpressionAttributeValues={':title': title, ':checked': checked_date},
+        ConditionExpression='attribute_exists(user_id) AND attribute_exists(video_id)',
+        ReturnValues='ALL_NEW'
+    )
+    return response['Attributes']
 
 
 # チャンネルIDに紐づくリストを取得

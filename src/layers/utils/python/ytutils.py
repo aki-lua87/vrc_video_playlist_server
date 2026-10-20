@@ -1,6 +1,8 @@
 import urllib.request
 import xml.etree.ElementTree as ET
 from apiclient.discovery import build
+from apiclient.errors import HttpError
+from httplib2 import HttpLib2Error
 import subprocess
 import os
 
@@ -200,6 +202,25 @@ def exec_ytdlp_cmd(url):
     return cp.stdout
 
 
+def ytapi_playlist_title(pid, youtube=None):
+    """Optional display metadata; failure must not discard a usable video list."""
+    try:
+        if youtube is None:
+            youtube = build('youtube', 'v3', developerKey=os.environ['API_KEY'])
+        response = youtube.playlists().list(
+            part='snippet', id=pid, fields='items(id,snippet/title)'
+        ).execute()
+    except (HttpError, HttpLib2Error, OSError) as error:
+        # HttpError's string can contain the request URL (and API key).
+        print('Playlist name unavailable:', type(error).__name__)
+        return ''
+    items = response.get('items', [])
+    if not items:
+        return ''
+    title = items[0].get('snippet', {}).get('title', '')
+    return title.strip() if isinstance(title, str) else ''
+
+
 def ytapi_search_playlist(pid):
     API_KEY = os.environ['API_KEY']
     YOUTUBE_API_SERVICE_NAME = 'youtube'
@@ -241,6 +262,6 @@ def ytapi_search_playlist(pid):
             video_datas['videos']['urls'].append(url)
             print(f'{title}, {url}')
         search_request = youtube.playlistItems().list_next(search_request, search_response)
-    # print(search_response)
-
+    # Reuse the client and fetch once per list refresh, not once per page/video.
+    video_datas['playlist_title'] = ytapi_playlist_title(pid, youtube)
     return video_datas
