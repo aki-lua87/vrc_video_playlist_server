@@ -29,6 +29,7 @@ src/
 └── layers/utils/python/        # 共有ユーティリティ (utilsLayer)
     ├── httputils.py            # リクエスト解析・レスポンス生成・UA判定
     ├── videolist.py            # 動画リストのキャッシュ取得/更新
+    ├── channelid.py            # @ハンドル・URL → UC形式チャンネルID
     ├── ddbutils.py             # DynamoDB操作
     └── ytutils.py              # YouTube API・RSS操作
 tests/                          # オフラインテスト (AWS/YouTubeアクセス不要)
@@ -41,7 +42,8 @@ tests/                          # オフラインテスト (AWS/YouTubeアクセ
 4. **配信**: VRCプレイヤーにはYouTube URLへ302リダイレクト
 
 ### APIエンドポイント
-- `/video/yt/channel/regist` - YouTubeチャンネル登録
+- `/video/yt/channel/regist` - YouTubeチャンネル登録 (body の channel_id は UCxxxx / @ハンドル / チャンネルURL / 動画URL)
+- `/yt/ch/resolve?q=...` - チャンネル指定をUC形式IDに変換 (確認用)
 - `/yt/ch/{channel_id}/video?n=X` - チャンネルの特定動画取得
 - `/yt/ch/{channel_id}/titles` - チャンネル動画タイトルリスト取得
 - `/yt/pl/{playlist_id}/video?n=X` - プレイリストの特定動画取得
@@ -93,7 +95,12 @@ Lambdaの環境変数 (`VRC_VIDEO_TABLE` / `API_KEY` / `CF_DOMAIN`) は provider
 - チャンネル・検索: 時間単位更新、プレイリスト: 日単位更新
 - YouTube API障害時は古いキャッシュにフォールバック (キャッシュも無ければ nf.mp4)
 
+### チャンネル指定の解決 (channelid)
+- 内部・DynamoDBのキーは常にUC形式ID (UCで始まる24文字)
+- パスの `{channel_id}` は UCxxxx か @ハンドル (registに渡した値をそのまま使うクライアントのため)
+- regist の body は URL も可: `/@` `/channel/` `/user/` `/c/` と動画URL (`watch?v=` `youtu.be` `shorts`)
+- 解決方法: @ハンドル=channels.list forHandle、/user/=forUsername、動画=videos.list (各1 unit)、/c/=チャンネルページのcanonicalをスクレイピング
+- 結果は `user_id='yt_channel_alias'` に7日キャッシュ (見つからない結果は1時間)。API障害時はキャッシュしない
+
 ## 重要な注意事項
-- チャンネルIDはUC*形式 (UCで始まる24文字) である必要があります
-- カスタムチャンネルURL (/c/username) は非対応
 - 全Lambda関数は個別パッケージ化 (handler.pyのみ)。共通処理はutilsLayer、外部ライブラリはpythonRequirementsレイヤー

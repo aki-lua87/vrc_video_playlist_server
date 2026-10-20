@@ -1,3 +1,4 @@
+import re
 import urllib.request
 import xml.etree.ElementTree as ET
 from googleapiclient.discovery import build
@@ -39,6 +40,41 @@ def scrapingRSS(rssdata):
         if link is not None:
             urls.append(link.attrib['href'])
     return name, urls, descriptions
+
+
+def _first_item(response):
+    items = response.get('items') or []
+    return items[0] if items else None
+
+
+def ytapi_channel_id_by_handle(handle):
+    # @ハンドル(@有無どちらも可)からチャンネルID。1 unit
+    item = _first_item(_youtube().channels().list(part='id', forHandle=handle, fields='items(id)').execute())
+    return item and item.get('id')
+
+
+def ytapi_channel_id_by_username(username):
+    # 旧 /user/xxx のユーザー名からチャンネルID。1 unit
+    item = _first_item(_youtube().channels().list(part='id', forUsername=username, fields='items(id)').execute())
+    return item and item.get('id')
+
+
+def ytapi_channel_id_by_video(video_id):
+    # 動画IDから投稿チャンネルのID。1 unit
+    item = _first_item(_youtube().videos().list(part='snippet', id=video_id, fields='items(snippet/channelId)').execute())
+    return item and item.get('snippet', {}).get('channelId')
+
+
+CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/channel/(UC[A-Za-z0-9_-]{22})"')
+
+
+def scrape_channel_id(url):
+    # APIで引けない /c/xxx 等はチャンネルページのcanonicalから取得
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ja'})
+    with urllib.request.urlopen(req, timeout=10) as res:
+        body = res.read().decode('utf-8', 'replace')
+    match = CANONICAL_RE.search(body)
+    return match.group(1) if match else None
 
 
 def ytapi_search_channelId(channelId):

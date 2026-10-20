@@ -54,6 +54,27 @@ def _count_up(user_id, video_id) -> int:
     return response.get('Attributes').get('_count')
 
 
+# チャンネル指定(@ハンドル等) -> チャンネルID のキャッシュ
+# channel_id が '' のものは見つからなかった結果
+def getChannelAlias(alias):
+    record = _get('yt_channel_alias', alias)
+    if record is None or int(record.get('TTL', 0)) <= datetime.datetime.now().timestamp():
+        # TTL切れ(DynamoDBの削除は遅延する)
+        return None
+    return record
+
+
+def registChannelAlias(alias, channel_id, ttl):
+    table.put_item(
+        Item={
+            'user_id': 'yt_channel_alias',
+            'video_id': alias,
+            'channel_id': channel_id,
+            'TTL': ttl
+        }
+    )
+
+
 # チャンネルが登録済みか確認
 def isExistChannelID(channel_id):
     record = _get('yt_channnel_id', channel_id)

@@ -67,6 +67,17 @@ functions:
           path: /video/yt/channel/regist
           method: post
           cors: true
+  # チャンネルID変換(確認用)
+  get_yt_ch_resolve:
+    handler: src/lambda/get_yt_ch_resolve/handler.main
+    package:
+      patterns:
+        - src/lambda/get_yt_ch_resolve/handler.py
+    events:
+      - http:
+          path: /yt/ch/resolve
+          method: get
+          cors: true
   # 動画取得
   get_yt_channel:
     handler: src/lambda/get_yt_channel/handler.main

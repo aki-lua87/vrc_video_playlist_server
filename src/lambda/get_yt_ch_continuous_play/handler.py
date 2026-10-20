@@ -1,4 +1,5 @@
 # チャンネル動画の連続再生(登録者のアクセスで次の動画へ進む)
+import channelid
 import ddbutils
 import httputils
 import ytutils
@@ -6,10 +7,9 @@ import ytutils
 
 def main(event, context):
     print('event:', event)
-    channel_id = httputils.path_param(event, 'channel_id')
-    print('channel_id:', channel_id)
+    channel_id = channelid.from_path(event)
     if channel_id is None:
-        return httputils.bad_request()
+        return httputils.redirect(httputils.not_found_url())
     ip_address = httputils.headers(event).get('X-Forwarded-For', 'Anonymous').split(',')[0]
     register_id = httputils.query_params(event).get('id', '')
     print('register_id:', register_id)

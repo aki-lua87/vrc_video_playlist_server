@@ -1,6 +1,7 @@
 # チャンネルの動画タイトルリストを返却
 import urllib.request
 
+import channelid
 import ddbutils
 import httputils
 import videolist
@@ -14,24 +15,27 @@ CREATE_VIDEO_API = 'https://v9kt9fos4k.execute-api.ap-northeast-1.amazonaws.com/
 
 def main(event, context):
     print('event:', event)
-    channel_id = httputils.path_param(event, 'channel_id')
-    print('channel_id:', channel_id)
-    if channel_id is None:
-        return httputils.bad_request()
+    channel_id = channelid.from_path(event)
     mode = httputils.query_params(event).get('version', 'v1')
     if mode == 'v2':
         # 未登録チャンネルは null
-        return httputils.json_text(videolist.channel_videos(channel_id, fetch_if_missing=False))
+        return httputils.json_text(registered_videos(channel_id))
     if httputils.is_loader(event):
         # StringLoaderからなら文字列を返す
-        videos = videolist.channel_videos(channel_id, fetch_if_missing=False) or {}
+        videos = registered_videos(channel_id) or {}
         return httputils.text(','.join(videos.get('titles', [])))
     return redirect_index_video(channel_id)
 
 
+def registered_videos(channel_id):
+    if channel_id is None:
+        return None
+    return videolist.channel_videos(channel_id, fetch_if_missing=False)
+
+
 # タイトル一覧動画(CloudFront)へリダイレクト
 def redirect_index_video(channel_id):
-    isExist, _ = ddbutils.isExistChannelID(channel_id)
+    isExist = channel_id is not None and ddbutils.isExistChannelID(channel_id)[0]
     if not isExist:
         print('does not exist', channel_id)
         return httputils.text('video not exist', 404)
