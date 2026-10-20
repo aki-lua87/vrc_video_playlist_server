@@ -1,10 +1,16 @@
 import urllib.request
 import xml.etree.ElementTree as ET
-from apiclient.discovery import build
-from apiclient.errors import HttpError
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from httplib2 import HttpLib2Error
-import subprocess
 import os
+
+YOUTUBE_URL = 'https://www.youtube.com/watch?v='
+ATOM = '{http://www.w3.org/2005/Atom}'
+
+
+def _youtube():
+    return build('youtube', 'v3', developerKey=os.environ['API_KEY'])
 
 
 def getRSS(channel_id):
@@ -24,38 +30,19 @@ def getRssFeed(url):
 
 
 def scrapingRSS(rssdata):
+    name = rssdata.findtext(f'{ATOM}author/{ATOM}name', '')
     descriptions = []
     urls = []
-    name = ""
-    for child in rssdata:
-        if child.tag == '{http://www.w3.org/2005/Atom}author':
-            for author in child:
-                if author.tag == '{http://www.w3.org/2005/Atom}name':
-                    name = child.find('{http://www.w3.org/2005/Atom}name').text
-        if child.tag == '{http://www.w3.org/2005/Atom}entry':
-            for childchild in child:
-                if childchild.tag == '{http://www.w3.org/2005/Atom}title':
-                    descriptions.append(child.find(
-                        '{http://www.w3.org/2005/Atom}title').text)
-                if childchild.tag == '{http://www.w3.org/2005/Atom}link':
-                    urls.append(childchild.attrib['href'])
+    for entry in rssdata.iter(f'{ATOM}entry'):
+        descriptions.append(entry.findtext(f'{ATOM}title'))
+        link = entry.find(f'{ATOM}link')
+        if link is not None:
+            urls.append(link.attrib['href'])
     return name, urls, descriptions
 
 
 def ytapi_search_channelId(channelId):
-    API_KEY = os.environ['API_KEY']
-    YOUTUBE_API_SERVICE_NAME = 'youtube'
-    YOUTUBE_API_VERSION = 'v3'
-
-    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
-
-    youtube = build(
-        YOUTUBE_API_SERVICE_NAME,
-        YOUTUBE_API_VERSION,
-        developerKey=API_KEY
-    )
-
-    search_response = youtube.search().list(
+    search_response = _youtube().search().list(
         channelId=channelId,
         part='snippet',
         type='video',
@@ -75,47 +62,29 @@ def ytapi_search_channelId(channelId):
             'urls': [],
         }
     }
-    titles = []
-    urls = []
-
     for search_result in search_response.get("items", []):
-        if search_result["id"]["kind"] == "youtube#video":
-            video_datas['auther'] = search_result["snippet"]["channelTitle"]
-            if search_result["snippet"]["liveBroadcastContent"] == "live":
-                video_datas['live']['title'] = search_result["snippet"]["title"]
-                video_datas['live']['url'] = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
-            elif search_result["snippet"]["liveBroadcastContent"] == "none":
-                title = search_result["snippet"]["title"]
-                url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
-                titles.append(title)
-                urls.append(url)
-    video_datas['videos']['titles'] = titles
-    video_datas['videos']['urls'] = urls
+        if search_result["id"]["kind"] != "youtube#video":
+            continue
+        snippet = search_result["snippet"]
+        url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
+        video_datas['auther'] = snippet["channelTitle"]
+        if snippet["liveBroadcastContent"] == "live":
+            video_datas['live']['title'] = snippet["title"]
+            video_datas['live']['url'] = url
+        elif snippet["liveBroadcastContent"] == "none":
+            video_datas['videos']['titles'].append(snippet["title"])
+            video_datas['videos']['urls'].append(url)
     return video_datas
 
 
 def ytapi_search_query(query):
-    API_KEY = os.environ['API_KEY']
-    YOUTUBE_API_SERVICE_NAME = 'youtube'
-    YOUTUBE_API_VERSION = 'v3'
-
-    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
-
-    youtube = build(
-        YOUTUBE_API_SERVICE_NAME,
-        YOUTUBE_API_VERSION,
-        developerKey=API_KEY
-    )
-
-    search_response = youtube.search().list(
+    search_response = _youtube().search().list(
         q=query,
         part='snippet',
         type='video',
         order='date',
         maxResults=21
     ).execute()
-
-    print(search_response)
 
     video_datas = {
         'query': query,
@@ -126,38 +95,23 @@ def ytapi_search_query(query):
         }
     }
     for search_result in search_response.get("items", []):
-        if search_result["snippet"]["liveBroadcastContent"] == "none":
-            title = search_result["snippet"]["title"]
-            url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
-            auther = search_result["snippet"]["channelTitle"]
-            video_datas['videos']['titles'].append(title)
-            video_datas['videos']['urls'].append(url)
-            video_datas['videos']['authers'].append(auther)
+        snippet = search_result["snippet"]
+        if snippet["liveBroadcastContent"] == "none":
+            video_datas['videos']['titles'].append(snippet["title"])
+            video_datas['videos']['urls'].append(f'{YOUTUBE_URL}{search_result["id"]["videoId"]}')
+            video_datas['videos']['authers'].append(snippet["channelTitle"])
     return video_datas
 
 
 def ytapi_search_channelId_ALL(channelId, n=19):
     # 再起させても MAX 500 らしい・・・
-    API_KEY = os.environ['API_KEY']
-    YOUTUBE_API_SERVICE_NAME = 'youtube'
-    YOUTUBE_API_VERSION = 'v3'
-
-    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
-
-    youtube = build(
-        YOUTUBE_API_SERVICE_NAME,
-        YOUTUBE_API_VERSION,
-        developerKey=API_KEY
-    )
-
+    youtube = _youtube()
     nextPagetoken = None
     video_datas = {
         'auther': '',
         'videos': []
     }
-    count = 0
-    isOverN = False
-    for num in range(20):
+    for _ in range(20):
         search_response = youtube.search().list(
             channelId=channelId,
             part='snippet',
@@ -168,45 +122,30 @@ def ytapi_search_channelId_ALL(channelId, n=19):
         ).execute()
 
         for search_result in search_response.get("items", []):
-            if search_result["id"]["kind"] == "youtube#video":
-                video_datas['auther'] = search_result["snippet"]["channelTitle"]
-                if search_result["snippet"]["liveBroadcastContent"] == "none":
-                    title = search_result["snippet"]["title"]
-                    url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
-                    video_data = {
-                        'title': title,
-                        'url': url
-                    }
-                    video_datas['videos'].append(video_data)
-                    count = count+1
-                    if count > n:
-                        isOverN = True
-                        break
-        if isOverN:
-            break
-        try:
-            nextPagetoken = search_response["nextPageToken"]
-        except Exception as e:
-            print('[WARN]', e)
+            if search_result["id"]["kind"] != "youtube#video":
+                continue
+            snippet = search_result["snippet"]
+            video_datas['auther'] = snippet["channelTitle"]
+            if snippet["liveBroadcastContent"] == "none":
+                video_datas['videos'].append({
+                    'title': snippet["title"],
+                    'url': f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
+                })
+                if len(video_datas['videos']) > n:
+                    print(len(video_datas['videos']))
+                    return video_datas
+        nextPagetoken = search_response.get("nextPageToken")
+        if nextPagetoken is None:
             break
     print(len(video_datas['videos']))
     return video_datas
-
-
-def exec_ytdlp_cmd(url):
-    print('exec_ytdlp_cmd:', url)
-    # yt-dlp -i -q --no-warnings --no-playlist -g https://www.youtube.com/watch?v=xxxxxxxx
-    cp = subprocess.run(
-        ["/var/task/addon/yt-dlp", '-i', '-q', '--no-warnings', '--no-playlist', '-f', 'b', '-g', url], capture_output=True)
-    print("stdout:", cp.stdout)
-    return cp.stdout
 
 
 def ytapi_playlist_title(pid, youtube=None):
     """Optional display metadata; failure must not discard a usable video list."""
     try:
         if youtube is None:
-            youtube = build('youtube', 'v3', developerKey=os.environ['API_KEY'])
+            youtube = _youtube()
         response = youtube.playlists().list(
             part='snippet', id=pid, fields='items(id,snippet/title)'
         ).execute()
@@ -222,18 +161,7 @@ def ytapi_playlist_title(pid, youtube=None):
 
 
 def ytapi_search_playlist(pid):
-    API_KEY = os.environ['API_KEY']
-    YOUTUBE_API_SERVICE_NAME = 'youtube'
-    YOUTUBE_API_VERSION = 'v3'
-
-    YOUTUBE_URL = 'https://www.youtube.com/watch?v='
-
-    youtube = build(
-        YOUTUBE_API_SERVICE_NAME,
-        YOUTUBE_API_VERSION,
-        developerKey=API_KEY
-    )
-
+    youtube = _youtube()
     video_datas = {
         'playlistId': pid,
         'videos': {
@@ -260,7 +188,6 @@ def ytapi_search_playlist(pid):
             url = f'{YOUTUBE_URL}{search_result["snippet"]["resourceId"]["videoId"]}'
             video_datas['videos']['titles'].append(title)
             video_datas['videos']['urls'].append(url)
-            print(f'{title}, {url}')
         search_request = youtube.playlistItems().list_next(search_request, search_response)
     # Reuse the client and fetch once per list refresh, not once per page/video.
     video_datas['playlist_title'] = ytapi_playlist_title(pid, youtube)

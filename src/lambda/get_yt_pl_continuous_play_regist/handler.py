@@ -1,11 +1,6 @@
-import os
-import boto3
-from datetime import datetime, timedelta
+# プレイリスト連続再生の初回登録 (get_yt_pl_continuous_play から同期呼び出し)
 import ddbutils
 import ytutils
-
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ['VRC_VIDEO_TABLE'])
 
 
 def main(event, context):
@@ -23,19 +18,7 @@ def main(event, context):
         return "exist record"
     try:
         video_list = ytutils.ytapi_search_playlist(playlist_id)
-        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, get_ttl_hours(6), register_id)
+        ddbutils.regist_continuous_playlist_video_list(video_list, ip_address, ddbutils.ttl_after(hours=6), register_id)
     except Exception as e:
         print(e)
         return "error"
-
-
-def get_ttl_minute(minute):
-    start = datetime.now()
-    expiration_date = start + timedelta(minutes=minute)
-    return round(expiration_date.timestamp())
-
-
-def get_ttl_hours(hour):
-    start = datetime.now()
-    expiration_date = start + timedelta(hours=hour)
-    return round(expiration_date.timestamp())
