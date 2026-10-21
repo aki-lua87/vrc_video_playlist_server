@@ -1,16 +1,12 @@
 service: vrc-video-api
 
-plugins:
-  - serverless-python-requirements
-
 custom:
-  s3_bucket: ${env:S3_PUBLIC_BUCKET}
   yt_api_key: ${env:API_KEY}
   contents_bucket: ${self:service}-${opt:stage}-bucket
   vrc_video_table: ${self:service}-${opt:stage}-table
   pythonRequirements:
-    # dockerizePip: true
-    dockerImage: public.ecr.aws/sam/build-python3.12:latest
+    dockerizePip: true
+    dockerImage: public.ecr.aws/sam/build-python3.13:latest
     useStaticCache: false
     useDownloadCache: false
     layer: true
@@ -26,9 +22,7 @@ custom:
 
 provider:
   name: aws
-  runtime: python3.10
-  # provider: ${opt:stage}
-  lambdaHashingVersion: 20201221
+  runtime: python3.13
   region: ap-northeast-1
   role: ${env:LAMBDA_IAM}
   timeout: 20
@@ -36,72 +30,60 @@ provider:
   tracing:
     apiGateway: true
     lambda: true
+  environment:
+    VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
+    API_KEY: ${self:custom.yt_api_key}
+    CF_DOMAIN: ${self:custom.cf_dmain}
+  layers:
+    - { Ref: UtilsLayerLambdaLayer }
+    - { Ref: PythonRequirementsLambdaLayer }
 
+# 各関数は自身のhandler.pyのみ含める (共通処理はutilsLayer)
 package:
   individually: true
-  exclude:
-    - node_modules/**
-    - doc/**
-    - .gitignore
-    - package-lock.json
-    - requirements.txt
-    - serverless.yml
-    - .env
-    - memo.txt
-    - example.py
-    - src/**
-    - html/**
-    # NOTE: ./addonにyt-dlpが必要
-    - addon/**
+  patterns:
+    - '!./**'
+
 layers:
   utilsLayer:
     path: src/layers/utils
     name: ${opt:stage}-${self:service}-utilsLayer
     description: utils
     compatibleRuntimes:
-      - python3.9
-      - python3.10
-  # NOTE: ./src/layers/chromeにchromedriverとheadless-chromiumが必要
-  # NOTE: バージョンは厳密なんだけど何入れて動いたかマジで忘れた
-  # chromeLayer:
-  #   path: src/layers/chrome
-  #   name: ${opt:stage}-${self:service}-chromeLayer
-  #   description: chrome
-  #   compatibleRuntimes:
-  #     - python3.7
+      - python3.13
+    package:
+      patterns:
+        - 'python/*.py'
 
 functions:
   # 登録
   post_yt_channel_regist:
     handler: src/lambda/post_yt_channel_regist/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/post_yt_channel_regist/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /video/yt/channel/regist
           method: post
           cors: true
+  # チャンネルID変換(確認用)
+  get_yt_ch_resolve:
+    handler: src/lambda/get_yt_ch_resolve/handler.main
+    package:
+      patterns:
+        - src/lambda/get_yt_ch_resolve/handler.py
+    events:
+      - http:
+          path: /yt/ch/resolve
+          method: get
+          cors: true
   # 動画取得
   get_yt_channel:
     handler: src/lambda/get_yt_channel/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_channel/handler.py
-        - addon/yt-dlp
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN: ${self:custom.cf_dmain}
-      QUEST_MODE: "false" # 'true' or 'false'
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           # ?n=n
@@ -115,24 +97,10 @@ functions:
   # リスト取得
   get_yt_channel_list:
     handler: src/lambda/get_yt_channel_list/handler.main
-    timeout: 30
+    timeout: 29
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_channel_list/handler.py
-    environment:
-      S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /videos/yt/chlist/{channel_id}
@@ -146,16 +114,8 @@ functions:
   get_yt_playlist:
     handler: src/lambda/get_yt_playlist/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_playlist/handler.py
-        - addon/yt-dlp
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN: ${self:custom.cf_dmain}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /yt/pl/{playlist_id}/video
@@ -165,15 +125,8 @@ functions:
   get_yt_playlist_titles:
     handler: src/lambda/get_yt_playlist_titles/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_playlist_titles/handler.py
-    environment:
-      API_KEY: ${self:custom.yt_api_key}
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      CF_DOMAIN: ${self:custom.cf_dmain}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /yt/pl/{playlist_id}/titles
@@ -182,21 +135,8 @@ functions:
   get_ytlive_channel:
     handler: src/lambda/get_ytlive_channel/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_ytlive_channel/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /videos/ytlive/ch/{channel_id}
@@ -205,22 +145,8 @@ functions:
   get_yt_query:
     handler: src/lambda/get_yt_query/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_query/handler.py
-        - addon/yt-dlp
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /videos/yt/query
@@ -233,24 +159,10 @@ functions:
   # リスト取得
   get_yt_query_list:
     handler: src/lambda/get_yt_query_list/handler.main
-    timeout: 30
+    timeout: 29
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_query_list/handler.py
-    environment:
-      S3_PUBLIC_BUCKET: ${self:custom.s3_bucket}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /videos/yt/query/list
@@ -262,15 +174,10 @@ functions:
           cors: true
   get_yt_ch_all:
     handler: src/lambda/get_yt_ch_all/handler.main
-    timeout: 30
+    timeout: 29
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_ch_all/handler.py
-    environment:
-      API_KEY: ${self:custom.yt_api_key}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /api/yt/ch/{channel_id}/video/all
@@ -279,16 +186,8 @@ functions:
   get_yt_ch_continuous_play:
     handler: src/lambda/get_yt_ch_continuous_play/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_ch_continuous_play/handler.py
-        - addon/yt-dlp
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN: ${self:custom.cf_dmain}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /yt/ch/{channel_id}/continuous
@@ -297,17 +196,10 @@ functions:
   get_yt_pl_continuous_play:
     handler: src/lambda/get_yt_pl_continuous_play/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_pl_continuous_play/handler.py
-        - addon/yt-dlp
     environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-      CF_DOMAIN: ${self:custom.cf_dmain}
       REGIST_LAMBDA_NAME: ${self:service}-${opt:stage}-get_yt_pl_continuous_play_regist
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /yt/pl/{playlist_id}/continuous
@@ -316,28 +208,16 @@ functions:
   get_yt_pl_continuous_play_regist:
     handler: src/lambda/get_yt_pl_continuous_play_regist/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_pl_continuous_play_regist/handler.py
-    environment:
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-      API_KEY: ${self:custom.yt_api_key}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     reservedConcurrency: 1
   # リスト取得 馬鹿重い
   get_yt_chs_description:
     handler: src/lambda/get_yt_chs_description/handler.main
-    timeout: 30
+    timeout: 29
     package:
-      include:
+      patterns:
         - src/lambda/get_yt_chs_description/handler.py
-    environment:
-      API_KEY: ${self:custom.yt_api_key}
-      VRC_VIDEO_TABLE: ${self:custom.vrc_video_table}
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /videos/yt/chs/description
@@ -345,44 +225,22 @@ functions:
           cors: true
   # スプレッドシート
   get_ss_video:
-    timeout: 30
+    timeout: 29
     handler: src/lambda/get_ss_video/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_ss_video/handler.py
-    environment:
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /ss/video
           method: get
           cors: true
   get_ss_video_titles:
-    timeout: 30
+    timeout: 29
     handler: src/lambda/get_ss_video_titles/handler.main
     package:
-      include:
+      patterns:
         - src/lambda/get_ss_video_titles/handler.py
-    environment:
-      CF_DOMAIN:
-        Fn::Join:
-          - ""
-          - - "https://"
-            - Fn::GetAtt:
-                - ContentsCloudFront
-                - DomainName
-    layers:
-      - { Ref: UtilsLayerLambdaLayer }
-      - { Ref: PythonRequirementsLambdaLayer }
     events:
       - http:
           path: /ss/titles

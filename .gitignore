@@ -7,3 +7,4 @@ headless-chromium
 chromedriver
 example.py
 example2.py
+.env
