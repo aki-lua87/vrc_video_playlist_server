@@ -94,6 +94,7 @@ Lambdaの環境変数 (`VRC_VIDEO_TABLE` / `API_KEY` / `CF_DOMAIN`) は provider
 ### 更新戦略 (videolist)
 - チャンネル・検索: 時間単位更新、プレイリスト: 日単位更新
 - YouTube API障害時は古いキャッシュにフォールバック (キャッシュも無ければ nf.mp4)
+- チャンネル動画はShortsを除外: 非公式の自動生成プレイリスト `UULF`(通常動画)+`UULV`(配信)を `playlistItems.list` で取得し、`videos.list` の publishedAt 順に統合 (配信中の判定も `liveBroadcastContent`)。両方取れない/エラー時は `search.list` にフォールバック (Shortsを含む)
 
 ### チャンネル指定の解決 (channelid)
 - 内部・DynamoDBのキーは常にUC形式ID (UCで始まる24文字)

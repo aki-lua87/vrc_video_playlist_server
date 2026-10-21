@@ -78,14 +78,6 @@ def scrape_channel_id(url):
 
 
 def ytapi_search_channelId(channelId):
-    search_response = _youtube().search().list(
-        channelId=channelId,
-        part='snippet',
-        type='video',
-        order='date',
-        maxResults=21
-    ).execute()
-
     video_datas = {
         'channelId': channelId,
         'auther': '',
@@ -98,11 +90,8 @@ def ytapi_search_channelId(channelId):
             'urls': [],
         }
     }
-    for search_result in search_response.get("items", []):
-        if search_result["id"]["kind"] != "youtube#video":
-            continue
-        snippet = search_result["snippet"]
-        url = f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
+    for video_id, snippet in _channel_videos(channelId, CHANNEL_VIDEO_COUNT):
+        url = f'{YOUTUBE_URL}{video_id}'
         video_datas['auther'] = snippet["channelTitle"]
         if snippet["liveBroadcastContent"] == "live":
             video_datas['live']['title'] = snippet["title"]
@@ -140,41 +129,102 @@ def ytapi_search_query(query):
 
 
 def ytapi_search_channelId_ALL(channelId, n=19):
-    # 再起させても MAX 500 らしい・・・
-    youtube = _youtube()
-    nextPagetoken = None
     video_datas = {
         'auther': '',
         'videos': []
     }
+    for video_id, snippet in _channel_videos(channelId, n + 1):
+        video_datas['auther'] = snippet["channelTitle"]
+        if snippet["liveBroadcastContent"] == "none":
+            video_datas['videos'].append({
+                'title': snippet["title"],
+                'url': f'{YOUTUBE_URL}{video_id}'
+            })
+    print(len(video_datas['videos']))
+    return video_datas
+
+
+# チャンネル動画は (video_id, snippet) の新しい順リストで扱う
+CHANNEL_VIDEO_COUNT = 21
+# UCxxxx の UC を置き換えた自動生成プレイリスト (非公式)
+LONG_VIDEOS = 'UULF'  # 通常動画 (Shorts・配信を除く)
+LIVE_VIDEOS = 'UULV'  # 配信 (配信中・アーカイブ)
+
+
+def _channel_videos(channelId, count):
+    # Shortsを除いた最新動画。UULF/UULV が使えなければ検索API (Shortsを含む)
+    try:
+        videos = ytapi_channel_recent_videos(channelId, count)
+    except HttpError as error:
+        print('[WARN] UULF/UULV error:', type(error).__name__)
+        videos = None
+    if videos is None:
+        print('[WARN] UULF/UULV unavailable, fallback to search')
+        videos = _search_channel_videos(channelId, count)
+    return videos[:count]
+
+
+def ytapi_channel_recent_videos(channelId, count):
+    # 通常動画と配信を投稿日時順に統合 (playlistItems 1 unit x2 + videos 1 unit)
+    # どちらのプレイリストも取得できない場合は None
+    if not channelId.startswith('UC'):
+        return None
+    youtube = _youtube()
+    id_lists = [_playlist_video_ids(youtube, prefix + channelId[2:], count)
+                for prefix in (LONG_VIDEOS, LIVE_VIDEOS)]
+    if all(ids is None for ids in id_lists):
+        return None
+    ids = list(dict.fromkeys(video_id for ids in id_lists for video_id in ids or []))
+    items = []
+    for start in range(0, len(ids), 50):
+        response = youtube.videos().list(
+            part='snippet',
+            id=','.join(ids[start:start + 50]),
+            maxResults=50,
+            fields='items(id,snippet(title,channelTitle,publishedAt,liveBroadcastContent))'
+        ).execute()
+        items.extend(response.get('items', []))
+    items.sort(key=lambda item: item['snippet']['publishedAt'], reverse=True)
+    return [(item['id'], item['snippet']) for item in items]
+
+
+def _playlist_video_ids(youtube, playlist_id, count):
+    # 該当する動画が無いチャンネルは404になるため None
+    try:
+        response = youtube.playlistItems().list(
+            part='contentDetails',
+            playlistId=playlist_id,
+            maxResults=min(count, 50),
+            fields='items/contentDetails/videoId'
+        ).execute()
+    except HttpError as error:
+        # HttpError's string can contain the request URL (and API key).
+        print('playlist unavailable:', playlist_id, type(error).__name__)
+        return None
+    return [item['contentDetails']['videoId'] for item in response.get('items', [])]
+
+
+def _search_channel_videos(channelId, count):
+    # 検索APIでの取得 (Shortsを含む)。100 unit/ページ、再起させても MAX 500 らしい・・・
+    youtube = _youtube()
+    videos = []
+    page_token = None
     for _ in range(20):
         search_response = youtube.search().list(
             channelId=channelId,
             part='snippet',
             type='video',
             order='date',
-            maxResults=50,
-            pageToken=nextPagetoken
+            maxResults=min(count, 50),
+            pageToken=page_token
         ).execute()
-
         for search_result in search_response.get("items", []):
-            if search_result["id"]["kind"] != "youtube#video":
-                continue
-            snippet = search_result["snippet"]
-            video_datas['auther'] = snippet["channelTitle"]
-            if snippet["liveBroadcastContent"] == "none":
-                video_datas['videos'].append({
-                    'title': snippet["title"],
-                    'url': f'{YOUTUBE_URL}{search_result["id"]["videoId"]}'
-                })
-                if len(video_datas['videos']) > n:
-                    print(len(video_datas['videos']))
-                    return video_datas
-        nextPagetoken = search_response.get("nextPageToken")
-        if nextPagetoken is None:
+            if search_result["id"]["kind"] == "youtube#video":
+                videos.append((search_result["id"]["videoId"], search_result["snippet"]))
+        page_token = search_response.get("nextPageToken")
+        if len(videos) >= count or page_token is None:
             break
-    print(len(video_datas['videos']))
-    return video_datas
+    return videos
 
 
 def ytapi_playlist_title(pid, youtube=None):
