@@ -16,7 +16,7 @@ def main(event, context):
     videos = None
     if channel_id is not None:
         try:
-            videos = videolist.channel_videos(channel_id)
+            videos = videolist.channel_videos(channel_id, limit=httputils.parse_limit(event))
         except Exception as e:
             print('[WARN]', e)
     url, title = videolist.pick(videos, n) or (httputils.not_found_url(), 'Not Found')

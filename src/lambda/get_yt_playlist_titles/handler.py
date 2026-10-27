@@ -7,6 +7,7 @@ from httplib2 import HttpLib2Error
 
 import ddbutils
 import httputils
+import videolist
 import ytutils
 
 
@@ -15,7 +16,7 @@ def main(event, context):
     if playlist_id is None or not re.fullmatch(r'[A-Za-z0-9_-]{12,100}', playlist_id):
         return response(400, {'result': 'NG', 'error': 'invalid playlist ID'})
     try:
-        titles = getVideoURL(playlist_id)
+        titles = getVideoURL(playlist_id, httputils.parse_limit(event))
     except HttpError as error:
         status = error.resp.status
         if status in (400, 404):
@@ -38,24 +39,23 @@ def response(status, body):
     return httputils.json_text(body, status)
 
 
-def getVideoURL(playlist_id):
-    v_list = ddbutils.getPlaylistVideos(playlist_id)
-    if not ddbutils.is_fresh(v_list, ddbutils.DAILY):
-        # 更新
-        print('update')
-        data = ytutils.ytapi_search_playlist(playlist_id)
-        ddbutils.registPlaylistVideos(data)
-        titles = dict(data['videos'])
-        titles['playlist_title'] = data.get('playlist_title', '')
-        return titles
+def getVideoURL(playlist_id, limit=httputils.LIMIT_STEP):
+    # キャッシュが無く取得にも失敗した場合は HttpError 等を送出
+    videos = videolist.playlist_videos(playlist_id, limit)
+    title = videos.get('playlist_title', '')
     today = datetime.now().strftime(ddbutils.DAILY)
-    if v_list.get('playlist_title_checked') != today:
+    if videos.get('playlist_title_checked') != today:
         # A legacy record can already have today's videos but no list name.
         # Update only metadata; do not refetch pages or change video ordering.
         title = ytutils.ytapi_playlist_title(playlist_id)
-        v_list = ddbutils.updatePlaylistTitle(playlist_id, title, today)
-    titles = dict(v_list)
-    titles['playlist_title'] = v_list.get('playlist_title', '')
-    # Keep legacy response fields; this new field is an internal retry marker.
-    titles.pop('playlist_title_checked', None)
-    return titles
+        ddbutils.updatePlaylistTitle(playlist_id, title, today)
+    return titles_body(videos, title, limit)
+
+
+def titles_body(videos, playlist_title, limit):
+    # キャッシュ有無で形を揃える (DynamoDBのキー等は返さない)。多めのキャッシュもlimit件に揃える
+    return {
+        'titles': list(videos.get('titles') or [])[:limit],
+        'urls': list(videos.get('urls') or [])[:limit],
+        'playlist_title': playlist_title,
+    }

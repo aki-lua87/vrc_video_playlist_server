@@ -12,9 +12,12 @@ DAILY = '%Y%m%d'
 continuous_yt_playlist_id = 'continuous_yt_playlist_id'
 
 
-def is_fresh(record, fmt=HOURLY):
-    # 現在の更新単位内に更新済みか
+def is_fresh(record, fmt=HOURLY, limit=None):
+    # 現在の更新単位内に更新済みか。limit指定時はその件数以上で取得済みかも見る
     if record is None:
+        return False
+    if limit is not None and int(record.get('limit', 0)) < limit:
+        print('limit:', record.get('limit'), '<', limit)
         return False
     latest = record.get('latest_update', 'NoData')
     print('latestDateStr:', latest)
@@ -24,6 +27,114 @@ def is_fresh(record, fmt=HOURLY):
 def ttl_after(**delta):
     # 例: ttl_after(hours=3)
     return round((datetime.datetime.now() + datetime.timedelta(**delta)).timestamp())
+
+
+# YouTube API 使用量 (概算)。UTCの時間 (YYYYMMDDHH) 別に API名ごとの unit と total を加算
+QUOTA_USAGE = 'yt_quota_usage'
+
+
+def add_quota_usage(api, cost):
+    # 記録に失敗しても本処理は止めない
+    try:
+        table.update_item(
+            Key={'user_id': QUOTA_USAGE,
+                 'video_id': datetime.datetime.now(datetime.timezone.utc).strftime(HOURLY)},
+            UpdateExpression='ADD #api :cost, #total :cost SET #ttl = if_not_exists(#ttl, :ttl)',
+            ExpressionAttributeNames={'#api': api, '#total': 'total', '#ttl': 'TTL'},
+            ExpressionAttributeValues={':cost': cost, ':ttl': ttl_after(days=35)},
+        )
+    except Exception as e:
+        print('[WARN] add_quota_usage', e)
+
+
+def getQuotaUsage(start_hour, end_hour):
+    # start_hour 〜 end_hour (UTC, YYYYMMDDHH) の時間別使用量
+    response = table.query(
+        KeyConditionExpression='user_id = :u AND video_id BETWEEN :start AND :end',
+        ExpressionAttributeValues={':u': QUOTA_USAGE, ':start': start_hour, ':end': end_hour},
+    )
+    return response.get('Items', [])
+
+
+# 対象(チャンネル・プレイリスト・検索)別の日次アクセス数。日付はJST
+# user_id='access_stats_YYYYMMDD' に1日分をまとめ、日次サマリーで1回のQueryで読む
+JST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def add_access(kind, target, name='', refreshed=False):
+    # count: アクセス数、refresh: YouTube APIで再取得した回数。記録に失敗しても本処理は止めない
+    names = {'#count': 'count', '#kind': 'kind', '#target': 'target', '#ttl': 'TTL'}
+    values = {':one': 1, ':kind': kind, ':target': target, ':ttl': ttl_after(days=35)}
+    adds = ['#count :one']
+    sets = ['#kind = :kind', '#target = :target', '#ttl = if_not_exists(#ttl, :ttl)']
+    if refreshed:
+        names['#refresh'] = 'refresh'
+        adds.append('#refresh :one')
+    if name:
+        names['#name'] = 'name'
+        values[':name'] = name
+        sets.append('#name = :name')
+    try:
+        table.update_item(
+            Key={'user_id': f"access_stats_{datetime.datetime.now(JST).strftime(DAILY)}",
+                 'video_id': f'{kind}#{target}'},
+            UpdateExpression=f"ADD {', '.join(adds)} SET {', '.join(sets)}",
+            ExpressionAttributeNames=names,
+            ExpressionAttributeValues=values,
+        )
+    except Exception as e:
+        print('[WARN] add_access', e)
+
+
+def getAccessStats(day):
+    # day: JSTの YYYYMMDD
+    items = []
+    kwargs = {'KeyConditionExpression': 'user_id = :u',
+              'ExpressionAttributeValues': {':u': f'access_stats_{day}'}}
+    while True:
+        response = table.query(**kwargs)
+        items.extend(response.get('Items', []))
+        if 'LastEvaluatedKey' not in response:
+            return items
+        kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+
+
+def _set_next_try(user_id, video_id, seconds, condition, values=None):
+    # next_try: この時刻(epoch秒)までは YouTube API で再取得しない。put_item での更新で消える
+    try:
+        table.update_item(
+            Key={'user_id': user_id, 'video_id': video_id},
+            UpdateExpression='SET next_try = :until',
+            ConditionExpression=condition,
+            ExpressionAttributeValues={':until': ttl_after(seconds=seconds), **(values or {})},
+        )
+    except Exception as e:
+        if getattr(e, 'response', {}).get('Error', {}).get('Code') == 'ConditionalCheckFailedException':
+            return False
+        raise
+    return True
+
+
+def claim_refresh(user_id, video_id, seconds):
+    # 再取得の権利を取る。他のリクエストが更新中・再試行待ちならFalse (同時アクセスでの重複取得防止)
+    try:
+        return _set_next_try(
+            user_id, video_id, seconds,
+            'attribute_exists(user_id) AND (attribute_not_exists(next_try) OR next_try < :now)',
+            {':now': ttl_after()},
+        )
+    except Exception as e:
+        # DynamoDB側の障害では従来通り取得する
+        print('[WARN] claim_refresh', e)
+        return True
+
+
+def delay_refresh(user_id, video_id, seconds):
+    # 取得失敗後しばらく再試行しない
+    try:
+        _set_next_try(user_id, video_id, seconds, 'attribute_exists(user_id)')
+    except Exception as e:
+        print('[WARN] delay_refresh', e)
 
 
 def _get(user_id, video_id):
@@ -105,7 +216,7 @@ def registQueryVideoList(video_datas):
             'video_id': video_datas['query'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
-            'latest_update': now.strftime(HOURLY),
+            'latest_update': now.strftime(DAILY),  # search.list は高コストのため1日単位で更新
         }
     )
 
@@ -141,18 +252,21 @@ def registVideoList(channel_id, video_urls, descriptions, index_create, auther='
 # List更新ver.api
 def registVideoListV2(video_datas, index_create):
     now = datetime.datetime.now()
-    table.put_item(
-        Item={
-            'user_id': 'list_yt_ch',
-            'video_id': video_datas['channelId'],
-            'auther': video_datas['auther'],
-            'titles': video_datas['videos']['titles'],
-            'urls': video_datas['videos']['urls'],
-            'live': video_datas['live']['url'],
-            'is_exec_index_create': index_create,
-            'latest_update': now.strftime(HOURLY),
-        }
-    )
+    item = {
+        'user_id': 'list_yt_ch',
+        'video_id': video_datas['channelId'],
+        'auther': video_datas['auther'],
+        'titles': video_datas['videos']['titles'],
+        'urls': video_datas['videos']['urls'],
+        'live': video_datas['live']['url'],
+        'limit': video_datas.get('limit', 0),
+        'is_exec_index_create': index_create,
+        'latest_update': now.strftime(HOURLY),
+    }
+    if video_datas.get('fallback'):
+        # search.list (100 unit) で取得した結果は1日再取得しない
+        item['next_try'] = ttl_after(days=1)
+    table.put_item(Item=item)
 
 
 # 動画作成済みフラグ
@@ -178,7 +292,8 @@ def registPlaylistVideos(video_datas):
             'video_id': video_datas['playlistId'],
             'titles': video_datas['videos']['titles'],
             'urls': video_datas['videos']['urls'],
-            'latest_update': now.strftime(DAILY),  # 1日単位で更新
+            'limit': video_datas.get('limit', 0),  # 取得時に要求された件数
+            'latest_update': now.strftime(HOURLY),
             'playlist_title': video_datas.get('playlist_title', ''),
             # Record attempts too, so an optional metadata failure is not retried
             # on every /titles request. Failed lookups replace stale names with ''.

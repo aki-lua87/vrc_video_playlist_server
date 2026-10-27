@@ -5,7 +5,6 @@ import channelid
 import ddbutils
 import httputils
 import videolist
-import ytutils
 
 # リスト動画作成API (別スタック)
 # 動画タイトル一覧を動画化して {CF_DOMAIN}/yt/list/{channel_id}.mp4 に配置する
@@ -17,20 +16,21 @@ def main(event, context):
     print('event:', event)
     channel_id = channelid.from_path(event)
     mode = httputils.query_params(event).get('version', 'v1')
+    limit = httputils.parse_limit(event)
     if mode == 'v2':
         # 未登録チャンネルは null
-        return httputils.json_text(registered_videos(channel_id))
+        return httputils.json_text(registered_videos(channel_id, limit))
     if httputils.is_loader(event):
         # StringLoaderからなら文字列を返す
-        videos = registered_videos(channel_id) or {}
+        videos = registered_videos(channel_id, limit) or {}
         return httputils.text(','.join(videos.get('titles', [])))
     return redirect_index_video(channel_id)
 
 
-def registered_videos(channel_id):
+def registered_videos(channel_id, limit):
     if channel_id is None:
         return None
-    return videolist.channel_videos(channel_id, fetch_if_missing=False)
+    return videolist.channel_videos(channel_id, fetch_if_missing=False, limit=limit)
 
 
 # タイトル一覧動画(CloudFront)へリダイレクト
@@ -43,12 +43,12 @@ def redirect_index_video(channel_id):
     record = ddbutils.getVideoList(channel_id) or {}
     isExecIndexCreate = record.get('is_exec_index_create', True)
     print('isExecIndexCreate:', isExecIndexCreate)
+    updated = []
     try:
-        if not ddbutils.is_fresh(record):
+        videolist.channel_videos(channel_id, index_create=False, on_update=lambda: updated.append(True))
+        if updated:
             # 更新
             print('update and create')
-            data = ytutils.ytapi_search_channelId(channel_id)
-            ddbutils.registVideoListV2(data, False)
             call_create_video_api(channel_id)
         elif isExecIndexCreate:
             # 非更新(APIコールのみ)

@@ -42,7 +42,7 @@ provider:
 package:
   individually: true
   patterns:
-    - '!./**'
+    - "!./**"
 
 layers:
   utilsLayer:
@@ -53,7 +53,7 @@ layers:
       - python3.13
     package:
       patterns:
-        - 'python/*.py'
+        - "python/*.py"
 
 functions:
   # 登録
@@ -246,6 +246,28 @@ functions:
           path: /ss/titles
           method: get
           cors: true
+  # YouTube API使用量(概算)をDiscordに通知
+  notify_yt_quota:
+    handler: src/lambda/notify_yt_quota/handler.main
+    package:
+      patterns:
+        - src/lambda/notify_yt_quota/handler.py
+    environment:
+      STAGE: ${opt:stage}
+      DISCORD_WEBHOOK_URL: ${env:DISCORD_WEBHOOK_URL, ''}
+    events:
+      - schedule: cron(0 * * * ? *) # 毎時0分 (UTC)
+  # 前日のアクセス上位をDiscordに通知
+  notify_access_summary:
+    handler: src/lambda/notify_access_summary/handler.main
+    package:
+      patterns:
+        - src/lambda/notify_access_summary/handler.py
+    environment:
+      STAGE: ${opt:stage}
+      DISCORD_WEBHOOK_URL: ${env:DISCORD_WEBHOOK_URL, ''}
+    events:
+      - schedule: cron(0 0 * * ? *) # 毎日 0:00 UTC = 9:00 JST
 resources:
   Resources:
     vrcVideoTable:
@@ -263,8 +285,8 @@ resources:
           - AttributeName: video_id
             KeyType: RANGE
         ProvisionedThroughput:
-          ReadCapacityUnits: 3
-          WriteCapacityUnits: 2
+          ReadCapacityUnits: 6
+          WriteCapacityUnits: 4
         TimeToLiveSpecification:
           AttributeName: TTL
           Enabled: True

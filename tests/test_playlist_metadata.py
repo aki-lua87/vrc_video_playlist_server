@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 ROOT = Path(__file__).resolve().parents[1]
 PLAYLIST_ID = 'PL123456789012345'
 TODAY = datetime.now().strftime('%Y%m%d')
+THIS_HOUR = datetime.now().strftime('%Y%m%d%H')
 
 
 class HttpError(Exception):
@@ -64,8 +65,9 @@ class PlaylistMetadataTests(unittest.TestCase):
             'VRC_VIDEO_TABLE': 'offline-table', 'API_KEY': 'offline-only',
             'CF_DOMAIN': 'https://example.invalid'
         }):
-            cls.yt = load('offline_ytutils', 'src/layers/utils/python/ytutils.py')
             cls.ddb = load('offline_ddbutils', 'src/layers/utils/python/ddbutils.py')
+            with patch.dict(sys.modules, {'ddbutils': cls.ddb}):
+                cls.yt = load('offline_ytutils', 'src/layers/utils/python/ytutils.py')
             cls.http = load('offline_httputils', 'src/layers/utils/python/httputils.py')
             with patch.dict(sys.modules, {'ytutils': cls.yt, 'ddbutils': cls.ddb, 'httputils': cls.http}):
                 cls.videolist = load('offline_videolist', 'src/layers/utils/python/videolist.py')
@@ -89,7 +91,7 @@ class PlaylistMetadataTests(unittest.TestCase):
         }
         self.record = {
             'user_id': 'list_yt_pl', 'video_id': PLAYLIST_ID,
-            'latest_update': TODAY, 'playlist_title_checked': TODAY,
+            'latest_update': THIS_HOUR, 'playlist_title_checked': TODAY, 'limit': 50,
             'playlist_title': self.data['playlist_title'], **copy.deepcopy(self.data['videos'])
         }
 
@@ -147,6 +149,36 @@ class PlaylistMetadataTests(unittest.TestCase):
         self.assertEqual(result['videos']['urls'], ['https://www.youtube.com/watch?v=' + x for x in ['one', 'two', 'three']])
         youtube.playlists.return_value.list.assert_called_once()
 
+    def test_pages_stop_at_limit(self):
+        youtube = MagicMock()
+
+        def page(start):
+            request = MagicMock()
+            request.execute.return_value = {'items': [
+                {'snippet': {'title': f't{i}', 'resourceId': {'videoId': f'v{i}'}}} for i in range(start, start + 50)]}
+            return request
+        youtube.playlistItems.return_value.list.return_value = page(0)
+        youtube.playlistItems.return_value.list_next.side_effect = [page(50), page(100), page(150)]
+        youtube.playlists.return_value.list.return_value.execute.return_value = {'items': []}
+        with patch.object(self.yt, 'build', return_value=youtube):
+            result = self.yt.ytapi_search_playlist(PLAYLIST_ID, 100)
+        self.assertEqual(result['limit'], 100)
+        self.assertEqual(result['videos']['titles'], [f't{i}' for i in range(100)])
+        self.assertEqual(youtube.playlistItems.return_value.list_next.call_count, 1)
+
+    def test_titles_refresh_when_cache_has_smaller_limit_and_trim_larger_cache(self):
+        with patch.object(self.ddb, 'getPlaylistVideos', return_value=self.record), \
+                patch.object(self.yt, 'ytapi_search_playlist', return_value=self.data) as api, \
+                patch.object(self.ddb, 'registPlaylistVideos'):
+            self.handler.getVideoURL(PLAYLIST_ID, 100)
+        api.assert_called_once_with(PLAYLIST_ID, 100)
+        large = dict(self.record, limit=500, titles=['A', 'B', 'C'] * 30, urls=['u'] * 90)
+        with patch.object(self.ddb, 'getPlaylistVideos', return_value=large), \
+                patch.object(self.yt, 'ytapi_search_playlist') as api:
+            result = self.handler.getVideoURL(PLAYLIST_ID)
+        api.assert_not_called()
+        self.assertEqual((len(result['titles']), len(result['urls'])), (50, 50))
+
     def test_metadata_failure_keeps_successful_video_list(self):
         with patch.object(self.yt, 'build', return_value=self.api_client(HttpError(503))):
             result = self.yt.ytapi_search_playlist(PLAYLIST_ID)
@@ -193,16 +225,15 @@ class PlaylistMetadataTests(unittest.TestCase):
         self.assertEqual(result, dict(self.data['videos'], playlist_title=self.data['playlist_title']))
         save.assert_called_once_with(self.data)
 
-    def test_current_cache_makes_no_youtube_request_and_preserves_old_fields(self):
+    def test_current_cache_makes_no_youtube_request_and_hides_record_fields(self):
         with patch.object(self.ddb, 'getPlaylistVideos', return_value=self.record), \
                 patch.object(self.yt, 'ytapi_playlist_title') as name, \
                 patch.object(self.yt, 'ytapi_search_playlist') as videos:
             result = self.handler.getVideoURL(PLAYLIST_ID)
         name.assert_not_called()
         videos.assert_not_called()
-        self.assertEqual(result['user_id'], 'list_yt_pl')
-        self.assertEqual(result['latest_update'], TODAY)
-        self.assertNotIn('playlist_title_checked', result)
+        # Same shape as a cache miss; no DynamoDB keys or update markers.
+        self.assertEqual(result, dict(self.data['videos'], playlist_title=self.data['playlist_title']))
         self.assertIn('playlist_title_checked', self.record)  # Do not mutate cached record.
 
     def test_legacy_cache_backfills_name_without_refetching_videos(self):
@@ -231,7 +262,7 @@ class PlaylistMetadataTests(unittest.TestCase):
         name.assert_called_once()
 
     def test_stale_name_is_cleared_when_current_list_refresh_has_no_name(self):
-        stale = dict(self.record, latest_update=(datetime.now() - timedelta(days=1)).strftime('%Y%m%d'))
+        stale = dict(self.record, latest_update=(datetime.now() - timedelta(hours=1)).strftime('%Y%m%d%H'))
         refreshed = dict(self.data, playlist_title='')
         with patch.object(self.ddb, 'getPlaylistVideos', return_value=stale), \
                 patch.object(self.yt, 'ytapi_search_playlist', return_value=refreshed), \

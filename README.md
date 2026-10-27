@@ -1,5 +1,8 @@
 # vrc_video_playlist_server
 
+プレイリスト名の追加仕様、ローカルテスト、共有レイヤーを含むデプロイ手順は
+[プレイリスト名の取得・デプロイ確認手順](doc/playlist-title-deployment.ja.md)を参照してください。
+
 ## About  
 
 VRChat上で同一のURLから異なるYoutubeの動画を再生するシステム。  

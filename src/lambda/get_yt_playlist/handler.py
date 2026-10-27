@@ -13,13 +13,13 @@ def main(event, context):
     n = httputils.parse_index(params.get('n', 0))
     if n is None:
         return httputils.bad_request()
-    url, title = getVideoURL(playlist_id, n)
+    url, title = getVideoURL(playlist_id, n, httputils.parse_limit(event))
     return httputils.video_response(event, url, title)
 
 
-def getVideoURL(playlist_id, n):
+def getVideoURL(playlist_id, n, limit=httputils.LIMIT_STEP):
     try:
-        videos = videolist.playlist_videos(playlist_id)
+        videos = videolist.playlist_videos(playlist_id, limit)
     except Exception as e:
         print('[WARN]', e)
         videos = None

@@ -8,6 +8,10 @@ LOADER_UA = 'UnityPlayer'  # StringLoader
 
 CORS = {"Access-Control-Allow-Origin": "*"}
 
+# 動画リストの取得件数 (?limit=)
+LIMIT_STEP = 50  # YouTube APIの1ページ
+MAX_LIMIT = 500
+
 
 def headers(event):
     return event.get('headers') or {}
@@ -31,6 +35,16 @@ def parse_index(value):
     except (TypeError, ValueError):
         return None
     return n if n >= 0 else None
+
+
+def parse_limit(event):
+    # 50刻みに切り上げて50〜500に収める。省略・不正値は50
+    try:
+        n = int(query_params(event).get('limit', LIMIT_STEP))
+    except (TypeError, ValueError):
+        return LIMIT_STEP
+    n = -(-n // LIMIT_STEP) * LIMIT_STEP
+    return min(max(n, LIMIT_STEP), MAX_LIMIT)
 
 
 def client_type(event):
